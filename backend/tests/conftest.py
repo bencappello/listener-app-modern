@@ -3,14 +3,29 @@ import sys
 import pytest
 import json
 import asyncio
+import greenlet
 from typing import Generator, Dict, Any, List, AsyncGenerator
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_scoped_session
 from sqlalchemy.pool import NullPool
 from httpx import AsyncClient
 import pytest_asyncio
+from sqlalchemy import event
+
+# Configure SQLAlchemy greenlet_spawn before importing or creating any engines
+# This is needed for SQLAlchemy to correctly handle async operations
+from sqlalchemy.util import greenlet_spawn as sa_greenlet_spawn
+
+def run_in_greenlet(fn, *args, **kwargs):
+    """Run a function in a greenlet"""
+    current = greenlet.getcurrent()
+    result = greenlet.greenlet(fn).switch(*args, **kwargs)
+    return result
+
+# Monkey patch SQLAlchemy's greenlet_spawn
+sa_greenlet_spawn.greenlet_spawn = run_in_greenlet
 
 # Add backend directory to Python path
 backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -43,7 +58,9 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 
 # Create async test database engine
 async_engine = create_async_engine(
-    ASYNC_SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+    ASYNC_SQLALCHEMY_DATABASE_URL, 
+    connect_args={"check_same_thread": False},
+    poolclass=NullPool
 )
 AsyncTestingSessionLocal = sessionmaker(
     autocommit=False, 
@@ -52,6 +69,18 @@ AsyncTestingSessionLocal = sessionmaker(
     class_=AsyncSession
 )
 
+# Create a session-scoped event loop for async tests
+@pytest.fixture(scope="session")
+def event_loop():
+    """
+    Create an instance of the default event loop for each test case.
+    This is needed for session-wide async fixtures.
+    """
+    policy = asyncio.get_event_loop_policy()
+    loop = policy.new_event_loop()
+    asyncio.set_event_loop(loop)
+    yield loop
+    loop.close()
 
 # Fixture to create and drop test database tables
 @pytest.fixture(scope="function")
@@ -96,7 +125,7 @@ def db_session(db: Session) -> Session:
 
 
 # Fixture for async DB session alias
-@pytest.fixture(scope="function")
+@pytest_asyncio.fixture(scope="function")
 async def async_db_session(async_db: AsyncSession) -> AsyncSession:
     return async_db
 
@@ -141,7 +170,7 @@ def client(db: Session) -> Generator[TestClient, None, None]:
 
 
 # Fixture for async client with async DB dependency override
-@pytest.fixture(scope="function")
+@pytest_asyncio.fixture(scope="function")
 async def async_client(async_db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
     # Override the get_async_db dependency
     async def override_get_async_db():
@@ -171,8 +200,14 @@ async def async_client(async_db: AsyncSession) -> AsyncGenerator[AsyncClient, No
     app.dependency_overrides[deps.get_current_active_user_async] = override_get_current_user_async
     app.dependency_overrides[deps.get_current_active_superuser_async] = override_get_current_user_async
     
-    # Create async test client
-    async with AsyncClient(app=app, base_url="http://test") as test_client:
+    # Create async test client with properly configured transport
+    from httpx import ASGITransport
+    
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+        follow_redirects=True
+    ) as test_client:
         yield test_client
     
     # Clear the override
@@ -215,16 +250,16 @@ def test_db_user(db: Session) -> User:
 
 
 # Fixture to create a test user in the async database
-@pytest.fixture(scope="function")
-async def async_test_db_user(async_db: AsyncSession) -> User:
+@pytest_asyncio.fixture
+async def async_test_db_user(async_db_session: AsyncSession) -> User:
     user = User(
         email="async_test_user@example.com",
         username="async_test_db_user",
         password="password123"
     )
-    async_db.add(user)
-    await async_db.commit()
-    await async_db.refresh(user)
+    async_db_session.add(user)
+    await async_db_session.commit()
+    await async_db_session.refresh(user)
     return user
 
 
@@ -300,40 +335,39 @@ def auth_headers(client: TestClient, test_db_user: User) -> Dict[str, str]:
 
 
 # Fixture for async authentication headers
-@pytest.fixture(scope="function")
-async def async_auth_headers(async_test_db_user: User) -> Dict[str, str]:
+@pytest_asyncio.fixture(scope="function")
+async def async_auth_headers(async_client: AsyncClient, async_test_db_user: User) -> Dict[str, str]:
     token_data = {"sub": async_test_db_user.email, "username": async_test_db_user.username}
     access_token = create_access_token(data=token_data)
     return {"Authorization": f"Bearer {access_token}"}
 
 
-# Fixture for an authenticated user
+# Fixture for authenticated user
 @pytest.fixture(scope="function")
 def authenticated_user(client: TestClient, db: Session) -> Dict[str, Any]:
-    """Create a user and generate a valid JWT token for them."""
+    # Create a test user and obtain token
+    email = "auth_test@example.com"
+    username = "auth_test_user"
+    password = "password123"
+    
     user = User(
-        email="auth@example.com",
-        username="authuser",
-        password="securepassword123"
+        email=email,
+        username=username,
+        password=password,
+        is_active=True
     )
     db.add(user)
     db.commit()
     db.refresh(user)
     
-    # Create access token
-    token_data = {"sub": user.email, "username": user.username}
+    token_data = {"sub": email, "username": username}
     access_token = create_access_token(data=token_data)
+    headers = {"Authorization": f"Bearer {access_token}"}
     
-    # Return user and token
-    return {
-        "user": user,
-        "token": access_token,
-        "headers": {"Authorization": f"Bearer {access_token}"}
-    }
+    return {"user": user, "token": access_token, "headers": headers}
 
 
 # Fixture for test data directory
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def test_data_dir() -> str:
-    """Return the path to the test data directory."""
-    return os.path.join(os.path.dirname(__file__), "data") 
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), "data") 
