@@ -11,6 +11,9 @@ from app.db.base import Base
 class User(Base):
     """User model with authentication capabilities."""
     
+    # Allow unmapped attributes for backward compatibility
+    __allow_unmapped__ = True
+    
     # Define columns with proper typing for SQLAlchemy 2.0
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     email: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
