@@ -27,6 +27,7 @@ function show_help {
     echo
     echo -e "${GREEN}Available commands:${NC}"
     echo -e "  ${YELLOW}setup${NC}      - Set up environment configuration for deployment"
+    echo -e "  ${YELLOW}build${NC}      - Build Docker images for application components"
     echo -e "  ${YELLOW}deploy${NC}     - Deploy the application to specified environment"
     echo -e "  ${YELLOW}status${NC}     - Check the status of deployed applications"
     echo -e "  ${YELLOW}scale${NC}      - Scale application components"
@@ -36,6 +37,7 @@ function show_help {
     echo
     echo -e "${GREEN}Examples:${NC}"
     echo -e "  $0 setup -e dev                          - Set up development environment"
+    echo -e "  $0 build -c backend -t v1.0.0 -p         - Build and push backend image with tag v1.0.0"
     echo -e "  $0 deploy -e dev                         - Deploy to development environment"
     echo -e "  $0 status -e prod                        - Check status of production deployment"
     echo -e "  $0 scale -e dev -c frontend -r 3         - Scale frontend to 3 replicas in dev"
@@ -59,6 +61,9 @@ shift
 case $COMMAND in
     setup)
         "$SCRIPT_DIR/setup-environment.sh" "$@"
+        ;;
+    build)
+        "$SCRIPT_DIR/build-images.sh" "$@"
         ;;
     deploy)
         # Check environment parameter

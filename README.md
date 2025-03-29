@@ -118,6 +118,11 @@ The Listener App includes comprehensive deployment automation scripts to simplif
   - Sets up environment configuration for deployment
   - Creates environment files and configures Kubernetes resources
 
+- **Image Building**: `build-images.sh`
+  - Builds Docker images for all application components
+  - Supports tagging and pushing to container registry
+  - Adds build metadata including Git commit hash
+
 - **Deployment**: `deploy-dev.sh` and `deploy-prod.sh`
   - Deploys the application to development or production environments
   - Handles configmaps, secrets, and applies all necessary Kubernetes manifests
@@ -145,22 +150,27 @@ The Listener App includes comprehensive deployment automation scripts to simplif
    ./scripts/deployment/run.sh setup -e dev
    ```
 
-2. **Deploy the application**:
+2. **Build application images**:
+   ```bash
+   ./scripts/deployment/run.sh build -c all -t v1.0.0 -p
+   ```
+
+3. **Deploy the application**:
    ```bash
    ./scripts/deployment/run.sh deploy -e dev
    ```
 
-3. **Check deployment status**:
+4. **Check deployment status**:
    ```bash
    ./scripts/deployment/run.sh status -e dev
    ```
 
-4. **Scale a component**:
+5. **Scale a component**:
    ```bash
    ./scripts/deployment/run.sh scale -e dev -c backend -r 3
    ```
 
-5. **Roll back if needed**:
+6. **Roll back if needed**:
    ```bash
    ./scripts/deployment/run.sh rollback -e dev -c backend
    ```
