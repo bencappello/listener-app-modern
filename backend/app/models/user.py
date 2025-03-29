@@ -33,6 +33,26 @@ class User(Base):
         secondaryjoin="UserSong.song_id == Song.id"
     )
     
+    # New relationships
+    followed_blogs = relationship(
+        "Blog",
+        secondary="user_blog",
+        back_populates="followed_by",
+        viewonly=True,
+        primaryjoin="and_(User.id == UserBlog.user_id, UserBlog.is_following == True)",
+        secondaryjoin="UserBlog.blog_id == Blog.id"
+    )
+    
+    followed_users = relationship(
+        "User",
+        secondary="user_follow",
+        primaryjoin="and_(User.id == UserFollow.follower_id, UserFollow.is_following == True)",
+        secondaryjoin="UserFollow.followed_id == User.id",
+        backref="followers"
+    )
+    
+    comments = relationship("Comment", back_populates="user")
+    
     def __init__(self, **kwargs):
         """Initialize user and hash password if provided."""
         if "password" in kwargs:

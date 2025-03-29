@@ -5,8 +5,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
 
-class Band(Base):
-    """Band model representing a music artist or group."""
+class Tag(Base):
+    """Tag model for categorizing content."""
     
     # Allow unmapped attributes for backward compatibility
     __allow_unmapped__ = True
@@ -15,15 +15,20 @@ class Band(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    image_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     
     # Relationships
-    songs = relationship("Song", back_populates="band")
-    
-    tags = relationship(
-        "Tag",
-        secondary="band_tag",
-        back_populates="bands"
+    songs = relationship(
+        "Song",
+        secondary="song_tag",
+        back_populates="tags"
     )
-    
-    comments = relationship("Comment", back_populates="band") 
+    bands = relationship(
+        "Band",
+        secondary="band_tag",
+        back_populates="tags"
+    )
+    blogs = relationship(
+        "Blog",
+        secondary="blog_tag",
+        back_populates="tags"
+    ) 
