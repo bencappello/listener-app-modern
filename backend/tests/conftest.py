@@ -2,11 +2,14 @@ import os
 import sys
 import pytest
 import json
-from typing import Generator, Dict, Any, List
+import asyncio
+from typing import Generator, Dict, Any, List, AsyncGenerator
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.pool import NullPool
+from httpx import AsyncClient
 
 # Add backend directory to Python path
 backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -16,7 +19,7 @@ if backend_dir not in sys.path:
 try:
     from app.core.config import settings
     from app.db.base import Base
-    from app.db.session import get_db
+    from app.db.session import get_db, get_async_db
     from app.models.user import User
     from app.services.auth import create_access_token
     from main import app
@@ -28,12 +31,24 @@ except ImportError as e:
 
 # Use SQLite in-memory for testing
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
+ASYNC_SQLALCHEMY_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
-# Create test database engine
+# Create test database engine (sync)
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Create async test database engine
+async_engine = create_async_engine(
+    ASYNC_SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
+AsyncTestingSessionLocal = sessionmaker(
+    autocommit=False, 
+    autoflush=False, 
+    bind=async_engine, 
+    class_=AsyncSession
+)
 
 
 # Fixture to create and drop test database tables
@@ -53,10 +68,34 @@ def db() -> Generator[Session, None, None]:
     Base.metadata.drop_all(bind=engine)
 
 
+# Fixture for async DB sessions
+@pytest.fixture(scope="function")
+async def async_db() -> AsyncGenerator[AsyncSession, None]:
+    async with AsyncTestingSessionLocal() as db:
+        # Create tables if they don't exist
+        async with async_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        
+        try:
+            yield db
+        finally:
+            await db.close()
+        
+        # Drop tables after test
+        async with async_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+
+
 # Alias for db fixture for backward compatibility
 @pytest.fixture(scope="function")
 def db_session(db: Session) -> Session:
     return db
+
+
+# Fixture for async DB session alias
+@pytest.fixture(scope="function")
+async def async_db_session(async_db: AsyncSession) -> AsyncSession:
+    return async_db
 
 
 # Fixture to override the dependency
@@ -74,6 +113,27 @@ def client(db: Session) -> Generator[TestClient, None, None]:
     
     # Create test client
     with TestClient(app) as test_client:
+        yield test_client
+    
+    # Clear the override
+    app.dependency_overrides.clear()
+
+
+# Fixture for async client with async DB dependency override
+@pytest.fixture(scope="function")
+async def async_client(async_db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+    # Override the get_async_db dependency
+    async def override_get_async_db():
+        try:
+            yield async_db
+        finally:
+            pass
+    
+    # Apply the override
+    app.dependency_overrides[get_async_db] = override_get_async_db
+    
+    # Create async test client
+    async with AsyncClient(app=app, base_url="http://test") as test_client:
         yield test_client
     
     # Clear the override
@@ -112,6 +172,20 @@ def test_db_user(db: Session) -> User:
     db.add(user)
     db.commit()
     db.refresh(user)
+    return user
+
+
+# Fixture to create a test user in the async database
+@pytest.fixture(scope="function")
+async def async_test_db_user(async_db: AsyncSession) -> User:
+    user = User(
+        email="async_test_user@example.com",
+        username="async_test_db_user",
+        password="password123"
+    )
+    async_db.add(user)
+    await async_db.commit()
+    await async_db.refresh(user)
     return user
 
 
@@ -182,6 +256,14 @@ def test_db_songs(db: Session, test_db_user: User, count: int = 5) -> List[Dict[
 @pytest.fixture(scope="function")
 def auth_headers(client: TestClient, test_db_user: User) -> Dict[str, str]:
     token_data = {"sub": test_db_user.email, "username": test_db_user.username}
+    access_token = create_access_token(data=token_data)
+    return {"Authorization": f"Bearer {access_token}"}
+
+
+# Fixture for async authentication headers
+@pytest.fixture(scope="function")
+async def async_auth_headers(async_test_db_user: User) -> Dict[str, str]:
+    token_data = {"sub": async_test_db_user.email, "username": async_test_db_user.username}
     access_token = create_access_token(data=token_data)
     return {"Authorization": f"Bearer {access_token}"}
 
