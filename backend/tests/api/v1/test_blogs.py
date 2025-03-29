@@ -1,13 +1,15 @@
 import pytest
+import pytest_asyncio
 from fastapi.testclient import TestClient
+from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.main import app
-from app.core.security import create_access_token
+from main import app
+from app.services.auth import create_access_token
 from app.models.blog import Blog
 from app.models.user import User
-from app.api.deps import get_current_active_superuser
+from app.api.dependencies import get_current_active_superuser
 
 pytestmark = pytest.mark.asyncio
 
@@ -40,7 +42,8 @@ def user_token_headers():
     return {"Authorization": f"Bearer {access_token}"}
 
 
-async def test_create_blog(db_session: AsyncSession, superuser_token_headers: dict) -> None:
+@pytest.mark.asyncio
+async def test_create_blog(async_db_session: AsyncSession, async_client: AsyncClient, superuser_token_headers: dict) -> None:
     """Test creating a blog via API."""
     # Data for a new blog
     blog_data = {
@@ -51,13 +54,12 @@ async def test_create_blog(db_session: AsyncSession, superuser_token_headers: di
         "is_active": True,
     }
     
-    # Use the test client to make a request
-    with TestClient(app) as client:
-        response = client.post(
-            "/api/blogs/",
-            headers=superuser_token_headers,
-            json=blog_data,
-        )
+    # Use the async client to make a request
+    response = await async_client.post(
+        "/api/v1/blogs/",
+        headers=superuser_token_headers,
+        json=blog_data,
+    )
     
     # Assert response
     assert response.status_code == 200
@@ -70,29 +72,29 @@ async def test_create_blog(db_session: AsyncSession, superuser_token_headers: di
     
     # Verify it was created in the database
     blog_id = data["id"]
-    result = await db_session.execute(select(Blog).where(Blog.id == blog_id))
+    result = await async_db_session.execute(select(Blog).where(Blog.id == blog_id))
     blog = result.scalars().first()
     assert blog is not None
     
     # Clean up
-    await db_session.delete(blog)
-    await db_session.commit()
+    await async_db_session.delete(blog)
+    await async_db_session.commit()
 
 
-async def test_get_blogs(db_session: AsyncSession, user_token_headers: dict) -> None:
+@pytest.mark.asyncio
+async def test_get_blogs(async_db_session: AsyncSession, async_client: AsyncClient, user_token_headers: dict) -> None:
     """Test retrieving blogs via API."""
     # Create test blogs
     blog1 = Blog(name="Test Blog 1", url="https://testblog1.com", is_active=True)
     blog2 = Blog(name="Test Blog 2", url="https://testblog2.com", is_active=True)
-    db_session.add_all([blog1, blog2])
-    await db_session.commit()
+    async_db_session.add_all([blog1, blog2])
+    await async_db_session.commit()
     
     # Use the test client to make a request
-    with TestClient(app) as client:
-        response = client.get(
-            "/api/blogs/",
-            headers=user_token_headers,
-        )
+    response = await async_client.get(
+        "/api/v1/blogs/",
+        headers=user_token_headers,
+    )
     
     # Assert response
     assert response.status_code == 200
@@ -100,12 +102,13 @@ async def test_get_blogs(db_session: AsyncSession, user_token_headers: dict) -> 
     assert len(data) >= 2  # At least the two we added
     
     # Clean up
-    await db_session.delete(blog1)
-    await db_session.delete(blog2)
-    await db_session.commit()
+    await async_db_session.delete(blog1)
+    await async_db_session.delete(blog2)
+    await async_db_session.commit()
 
 
-async def test_get_blog(db_session: AsyncSession, user_token_headers: dict) -> None:
+@pytest.mark.asyncio
+async def test_get_blog(async_db_session: AsyncSession, async_client: AsyncClient, user_token_headers: dict) -> None:
     """Test retrieving a specific blog via API."""
     # Create test blog
     blog = Blog(
@@ -114,16 +117,15 @@ async def test_get_blog(db_session: AsyncSession, user_token_headers: dict) -> N
         description="Blog for specific retrieval test",
         is_active=True,
     )
-    db_session.add(blog)
-    await db_session.commit()
-    await db_session.refresh(blog)
+    async_db_session.add(blog)
+    await async_db_session.commit()
+    await async_db_session.refresh(blog)
     
     # Use the test client to make a request
-    with TestClient(app) as client:
-        response = client.get(
-            f"/api/blogs/{blog.id}",
-            headers=user_token_headers,
-        )
+    response = await async_client.get(
+        f"/api/v1/blogs/{blog.id}",
+        headers=user_token_headers,
+    )
     
     # Assert response
     assert response.status_code == 200
@@ -134,11 +136,12 @@ async def test_get_blog(db_session: AsyncSession, user_token_headers: dict) -> N
     assert data["description"] == blog.description
     
     # Clean up
-    await db_session.delete(blog)
-    await db_session.commit()
+    await async_db_session.delete(blog)
+    await async_db_session.commit()
 
 
-async def test_update_blog(db_session: AsyncSession, superuser_token_headers: dict) -> None:
+@pytest.mark.asyncio
+async def test_update_blog(async_db_session: AsyncSession, async_client: AsyncClient, superuser_token_headers: dict) -> None:
     """Test updating a blog via API."""
     # Create test blog
     blog = Blog(
@@ -147,9 +150,9 @@ async def test_update_blog(db_session: AsyncSession, superuser_token_headers: di
         description="Original description",
         is_active=True,
     )
-    db_session.add(blog)
-    await db_session.commit()
-    await db_session.refresh(blog)
+    async_db_session.add(blog)
+    await async_db_session.commit()
+    await async_db_session.refresh(blog)
     
     # Data for the update
     update_data = {
@@ -159,12 +162,11 @@ async def test_update_blog(db_session: AsyncSession, superuser_token_headers: di
     }
     
     # Use the test client to make a request
-    with TestClient(app) as client:
-        response = client.put(
-            f"/api/blogs/{blog.id}",
-            headers=superuser_token_headers,
-            json=update_data,
-        )
+    response = await async_client.put(
+        f"/api/v1/blogs/{blog.id}",
+        headers=superuser_token_headers,
+        json=update_data,
+    )
     
     # Assert response
     assert response.status_code == 200
@@ -176,17 +178,18 @@ async def test_update_blog(db_session: AsyncSession, superuser_token_headers: di
     assert data["url"] == blog.url  # Not updated
     
     # Verify it was updated in the database
-    await db_session.refresh(blog)
+    await async_db_session.refresh(blog)
     assert blog.name == update_data["name"]
     assert blog.description == update_data["description"]
     assert blog.is_active == update_data["is_active"]
     
     # Clean up
-    await db_session.delete(blog)
-    await db_session.commit()
+    await async_db_session.delete(blog)
+    await async_db_session.commit()
 
 
-async def test_delete_blog(db_session: AsyncSession, superuser_token_headers: dict) -> None:
+@pytest.mark.asyncio
+async def test_delete_blog(async_db_session: AsyncSession, async_client: AsyncClient, superuser_token_headers: dict) -> None:
     """Test deleting a blog via API."""
     # Create test blog
     blog = Blog(
@@ -194,23 +197,22 @@ async def test_delete_blog(db_session: AsyncSession, superuser_token_headers: di
         url="https://blogtodelete.com",
         is_active=True,
     )
-    db_session.add(blog)
-    await db_session.commit()
-    await db_session.refresh(blog)
+    async_db_session.add(blog)
+    await async_db_session.commit()
+    await async_db_session.refresh(blog)
     
     blog_id = blog.id
     
     # Use the test client to make a request
-    with TestClient(app) as client:
-        response = client.delete(
-            f"/api/blogs/{blog_id}",
-            headers=superuser_token_headers,
-        )
+    response = await async_client.delete(
+        f"/api/v1/blogs/{blog_id}",
+        headers=superuser_token_headers,
+    )
     
     # Assert response
     assert response.status_code == 200
     
     # Verify it was deleted from the database
-    result = await db_session.execute(select(Blog).where(Blog.id == blog_id))
+    result = await async_db_session.execute(select(Blog).where(Blog.id == blog_id))
     deleted_blog = result.scalars().first()
     assert deleted_blog is None 
