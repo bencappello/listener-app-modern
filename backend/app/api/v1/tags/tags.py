@@ -12,10 +12,10 @@ router = APIRouter()
 
 @router.get("/", response_model=List[Tag])
 async def read_tags(
-    db: AsyncSession = Depends(deps.get_db),
+    db: AsyncSession = Depends(deps.get_async_db),
     skip: int = 0,
     limit: int = 100,
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user_async),
 ) -> Any:
     """
     Retrieve tags.
@@ -27,9 +27,9 @@ async def read_tags(
 @router.post("/", response_model=Tag)
 async def create_tag(
     *,
-    db: AsyncSession = Depends(deps.get_db),
+    db: AsyncSession = Depends(deps.get_async_db),
     tag_in: TagCreate,
-    current_user: User = Depends(deps.get_current_active_superuser),
+    current_user: User = Depends(deps.get_current_active_superuser_async),
 ) -> Any:
     """
     Create new tag.
@@ -47,9 +47,9 @@ async def create_tag(
 @router.get("/{tag_id}", response_model=Tag)
 async def read_tag(
     *,
-    db: AsyncSession = Depends(deps.get_db),
+    db: AsyncSession = Depends(deps.get_async_db),
     tag_id: int = Path(..., title="The ID of the tag to get"),
-    current_user: User = Depends(deps.get_current_user),
+    current_user: User = Depends(deps.get_current_user_async),
 ) -> Any:
     """
     Get tag by ID.
@@ -63,10 +63,10 @@ async def read_tag(
 @router.put("/{tag_id}", response_model=Tag)
 async def update_tag(
     *,
-    db: AsyncSession = Depends(deps.get_db),
+    db: AsyncSession = Depends(deps.get_async_db),
     tag_id: int = Path(..., title="The ID of the tag to update"),
     tag_in: TagUpdate,
-    current_user: User = Depends(deps.get_current_active_superuser),
+    current_user: User = Depends(deps.get_current_active_superuser_async),
 ) -> Any:
     """
     Update a tag.
@@ -89,9 +89,9 @@ async def update_tag(
 @router.delete("/{tag_id}", response_model=Tag)
 async def delete_tag(
     *,
-    db: AsyncSession = Depends(deps.get_db),
+    db: AsyncSession = Depends(deps.get_async_db),
     tag_id: int = Path(..., title="The ID of the tag to delete"),
-    current_user: User = Depends(deps.get_current_active_superuser),
+    current_user: User = Depends(deps.get_current_active_superuser_async),
 ) -> Any:
     """
     Delete a tag.
