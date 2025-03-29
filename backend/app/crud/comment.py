@@ -35,6 +35,12 @@ class CRUDComment(CRUDBase[Comment, CommentCreate, CommentUpdate]):
         await db_session.commit()
         await db_session.refresh(db_obj)
         return db_obj
+
+    async def create_with_owner(
+        self, db: AsyncSession, *, obj_in: CommentCreate, owner_id: int
+    ) -> Comment:
+        """Create a new comment with owner ID (alias for create_with_user)."""
+        return await self.create_with_user(db_session=db, obj_in=obj_in, user_id=owner_id)
     
     def create_with_user_sync(
         self, db_session: Session, *, obj_in: CommentCreate, user_id: int
@@ -89,6 +95,18 @@ class CRUDComment(CRUDBase[Comment, CommentCreate, CommentUpdate]):
             .limit(limit)
         )
         return result.scalars().all()
+    
+    async def get_by_blog(
+        self, db_session: AsyncSession, *, blog_id: int, skip: int = 0, limit: int = 100
+    ) -> List[Comment]:
+        """Get comments for a specific blog."""
+        return await self.get_by_target(
+            db_session=db_session, 
+            target_type="blog", 
+            target_id=blog_id,
+            skip=skip,
+            limit=limit
+        )
     
     def get_by_target_sync(
         self, 

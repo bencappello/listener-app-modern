@@ -3,6 +3,8 @@ from typing import Optional, Union, Dict, Any, Set
 
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.future import select
 
 from app.core.config import settings
 from app.models.user import User
@@ -79,7 +81,44 @@ def verify_token(token: str, db: Session) -> Optional[User]:
         return user
     except JWTError:
         # Return None if token is invalid
-        raise 
+        raise
+
+
+async def verify_token_async(token: str, db: AsyncSession) -> Optional[User]:
+    """
+    Verify JWT token and return user (async version).
+    
+    Args:
+        token: JWT token to verify
+        db: Async database session
+        
+    Returns:
+        Optional[User]: User if token is valid, None otherwise
+    """
+    try:
+        # Check if token is blacklisted
+        if token in token_blacklist:
+            return None
+        
+        # Decode JWT
+        payload = jwt.decode(
+            token, 
+            settings.JWT_SECRET, 
+            algorithms=[settings.JWT_ALGORITHM]
+        )
+        
+        # Extract email from token
+        email: str = payload.get("sub")
+        if email is None:
+            return None
+            
+        # Get user from database using async query
+        result = await db.execute(select(User).filter(User.email == email))
+        user = result.scalars().first()
+        return user
+    except JWTError:
+        # Return None if token is invalid
+        raise
 
 
 def blacklist_token(token: str) -> None:

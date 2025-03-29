@@ -25,4 +25,5 @@ class LoginForm(BaseModel):
 
 class LogoutResponse(BaseModel):
     """Schema for logout response."""
-    message: str = "Successfully logged out" 
+    message: str = "Successfully logged out"
+    user: Optional[User] = None 
