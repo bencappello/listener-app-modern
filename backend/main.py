@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.api.v1.api import api_router
 
 # Create FastAPI application
 app = FastAPI(
@@ -33,16 +34,8 @@ def health_check():
     return {"status": "ok", "version": app.version}
 
 
-# Import and include routers
-# These will be uncommented as we implement the routes in subsequent steps
-# from app.api.routes import auth, users, songs, bands, blogs, tags, comments
-# app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
-# app.include_router(users.router, prefix="/api/users", tags=["Users"])
-# app.include_router(songs.router, prefix="/api/songs", tags=["Songs"])
-# app.include_router(bands.router, prefix="/api/bands", tags=["Bands"])
-# app.include_router(blogs.router, prefix="/api/blogs", tags=["Blogs"])
-# app.include_router(tags.router, prefix="/api/tags", tags=["Tags"])
-# app.include_router(comments.router, prefix="/api/comments", tags=["Comments"])
+# Include API router
+app.include_router(api_router, prefix="/api/v1")
 
 
 if __name__ == "__main__":

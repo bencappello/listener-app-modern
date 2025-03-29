@@ -10,7 +10,9 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Import models to ensure they are registered with the Base
 from app.db.base import Base
-from app.core.config import settings
+
+# Import models for Alembic to detect
+from app.models.user import User  # noqa
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -20,13 +22,14 @@ config = context.config
 # This line sets up loggers basically.
 fileConfig(config.config_file_name)
 
-# Set sqlalchemy.url from environment
-config.set_main_option("sqlalchemy.url", str(settings.DATABASE_URL))
+# Set database URL for migrations
+DATABASE_URL = os.getenv(
+    "DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/listener_db"
+)
+config.set_main_option("sqlalchemy.url", DATABASE_URL)
 
-# add your model's MetaData object here
+# Add your model's MetaData object here
 # for 'autogenerate' support
-# from myapp import mymodel
-# target_metadata = mymodel.Base.metadata
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
