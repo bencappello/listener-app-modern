@@ -1,6 +1,6 @@
-from typing import Optional
+from typing import Optional, List
 from sqlalchemy import String, Boolean
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import expression
 import bcrypt
 import re
@@ -21,6 +21,16 @@ class User(Base):
     password: Mapped[str] = mapped_column(String, nullable=False)
     is_active: Mapped[bool] = mapped_column(
         Boolean, server_default=expression.true(), nullable=False
+    )
+    
+    # Relationships
+    favorites = relationship(
+        "Song",
+        secondary="user_song",
+        back_populates="favorited_by",
+        viewonly=True,
+        primaryjoin="and_(User.id == UserSong.user_id, UserSong.is_favorite == True)",
+        secondaryjoin="UserSong.song_id == Song.id"
     )
     
     def __init__(self, **kwargs):

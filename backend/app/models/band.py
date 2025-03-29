@@ -17,9 +17,5 @@ class Band(Base):
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     image_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     
-    # Placeholder for the relationship - will be implemented when Song model exists
-    # For now, return an empty list to match the test expectations
-    @property
-    def songs(self) -> List:
-        """Placeholder for songs relationship."""
-        return [] 
+    # Relationships
+    songs = relationship("Song", back_populates="band") 
