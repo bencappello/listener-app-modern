@@ -2,7 +2,8 @@ import os
 import secrets
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import AnyHttpUrl, BaseSettings, PostgresDsn, validator
+from pydantic import field_validator, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -12,40 +13,21 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000
-    SECRET_KEY: str = secrets.token_urlsafe(32)
+    SECRET_KEY: str = "development_secret_key"
     DEBUG: bool = True
     
-    # CORS
-    API_CORS_ORIGINS: List[AnyHttpUrl] = []
+    # CORS - simplified to avoid validation errors
+    API_CORS_ORIGINS_STR: Optional[str] = None
     
-    @validator("API_CORS_ORIGINS", pre=True)
-    def assemble_cors_origins(cls, v: Union[str, List[str]]) -> Union[List[str], str]:
-        if isinstance(v, str) and not v.startswith("["):
-            return [i.strip() for i in v.split(",")]
-        elif isinstance(v, (list, str)):
-            return v
-        raise ValueError(v)
+    @property
+    def API_CORS_ORIGINS(self) -> List[str]:
+        """Get a list of allowed CORS origins."""
+        if self.API_CORS_ORIGINS_STR:
+            return [i.strip() for i in self.API_CORS_ORIGINS_STR.split(",")]
+        return ["http://localhost:3000", "http://localhost:8080"]
     
     # Database
-    DATABASE_URL: Optional[PostgresDsn] = None
-    DB_HOST: str = "localhost"
-    DB_PORT: str = "5432"
-    DB_NAME: str = "listener_db"
-    DB_USER: str = "postgres"
-    DB_PASSWORD: str = "postgres"
-    
-    @validator("DATABASE_URL", pre=True)
-    def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
-        if isinstance(v, str):
-            return v
-        return PostgresDsn.build(
-            scheme="postgresql",
-            user=values.get("DB_USER"),
-            password=values.get("DB_PASSWORD"),
-            host=values.get("DB_HOST"),
-            port=values.get("DB_PORT"),
-            path=f"/{values.get('DB_NAME') or ''}",
-        )
+    DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/listener_db"
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -54,9 +36,19 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
     
     # JWT
-    JWT_SECRET: str = secrets.token_urlsafe(32)
+    JWT_SECRET: str = "jwt_development_secret"
     JWT_ALGORITHM: str = "HS256"
-    JWT_EXPIRATION: int = 60 * 24  # 1 day in minutes
+    JWT_EXPIRATION: int = 1440  # 24 hours in minutes
+    
+    @field_validator("JWT_EXPIRATION", mode="before")
+    @classmethod
+    def parse_jwt_expiration(cls, v):
+        """Parse JWT expiration from string to int."""
+        if isinstance(v, str):
+            # Remove any comments and convert to int
+            v = v.split('#')[0].strip()
+            return int(v)
+        return v
     
     # AWS
     AWS_ACCESS_KEY_ID: Optional[str] = None
@@ -65,11 +57,12 @@ class Settings(BaseSettings):
     AWS_S3_BUCKET: Optional[str] = None
     
     # Frontend
-    FRONTEND_URL: AnyHttpUrl = "http://localhost:3000"
+    FRONTEND_URL: str = "http://localhost:3000"
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = SettingsConfigDict(
+        env_file=".env", 
+        case_sensitive=True
+    )
 
 
 # Create settings instance
@@ -78,9 +71,5 @@ settings = Settings()
 # Override settings for test environment
 if os.environ.get("APP_ENV") == "test":
     settings.DEBUG = True
-    settings.DATABASE_URL = os.environ.get(
-        "TEST_DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/test_db"
-    )
-    settings.REDIS_URL = os.environ.get(
-        "TEST_REDIS_URL", "redis://localhost:6379/1"
-    ) 
+    settings.DATABASE_URL = "sqlite:///./test.db"
+    settings.REDIS_URL = "redis://localhost:6379/1" 
