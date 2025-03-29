@@ -2,7 +2,22 @@ import React, { FC, ReactElement, ReactNode } from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { Provider } from 'react-redux';
-import { store } from '../store';
+import { configureStore } from '@reduxjs/toolkit';
+import authReducer from '../features/auth/authSlice';
+
+// Create a mock store for testing
+const createMockStore = (preloadedState = {}) => {
+  return configureStore({
+    reducer: {
+      auth: authReducer,
+      // Add more reducers here as needed for tests
+    },
+    preloadedState
+  });
+};
+
+// Default mock store
+const mockStore = createMockStore();
 
 // Mock ChakraProvider
 const MockChakraProvider: FC<{ children: ReactNode }> = ({ children }) => {
@@ -56,10 +71,11 @@ const MockQueryClientProvider: FC<{ children: ReactNode }> = ({ children }) => {
   return <>{children}</>;
 };
 
+// For components that don't need their own router
 const AllTheProviders: FC<{ children: ReactNode }> = ({ children }) => {
   return (
     <MockQueryClientProvider>
-      <Provider store={store}>
+      <Provider store={mockStore}>
         <MockChakraProvider>
           <BrowserRouter>{children}</BrowserRouter>
         </MockChakraProvider>
@@ -68,13 +84,30 @@ const AllTheProviders: FC<{ children: ReactNode }> = ({ children }) => {
   );
 };
 
+// For tests that provide their own router
+const AllTheProvidersWithoutRouter: FC<{ children: ReactNode }> = ({ children }) => {
+  return (
+    <MockQueryClientProvider>
+      <Provider store={mockStore}>
+        <MockChakraProvider>
+          {children}
+        </MockChakraProvider>
+      </Provider>
+    </MockQueryClientProvider>
+  );
+};
+
 const customRender = (
   ui: ReactElement,
-  options?: Omit<RenderOptions, 'wrapper'>,
-) => render(ui, { wrapper: AllTheProviders, ...options });
+  options?: Omit<RenderOptions, 'wrapper'> & { useRouter?: boolean },
+) => {
+  const { useRouter = true, ...renderOptions } = options || {};
+  const Wrapper = useRouter ? AllTheProviders : AllTheProvidersWithoutRouter;
+  return render(ui, { wrapper: Wrapper, ...renderOptions });
+};
 
 // re-export everything
 export * from '@testing-library/react';
 
 // override render method
-export { customRender as render }; 
+export { customRender as render, createMockStore }; 
