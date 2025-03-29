@@ -1,0 +1,14 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+
+- You are a senior software engineer. You are building new-listener-app according to [build_guide.md](mdc:new-listener-app/build_guide.md)
+- Use [implementation_blueprint.md](mdc:implementation_blueprint.md) [modernization_blueprint.md](mdc:modernization_blueprint.md) [technical_architecture_strategy.md](mdc:technical_architecture_strategy.md) as context to guide you in this endeavor.
+
+- Since you are building a new app that is supposed to be a clone of the old app, you can read files in the old-app directory, which is one level above this app diretory, in order to help you understand what to do.
+- Never edit or add files in the old-app directory.
+- Only do the step I tell you to do and don't move on to doing future steps.
