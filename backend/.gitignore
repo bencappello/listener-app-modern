@@ -1,0 +1,7 @@
+# Ignore SQLite test database
+test.db
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*.class
