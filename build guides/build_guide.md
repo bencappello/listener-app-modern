@@ -147,58 +147,16 @@ curl -X POST http://localhost:8000/api/auth/login -d '{"username":"testuser","pa
 curl http://localhost:8000/api/users/1/favorites -H "Authorization: Bearer $TOKEN"
 ```
 
-### Step 10: Advanced API Features (TDD)
-1. **Write tests for search functionality**
-2. Implement search functionality to pass tests
-3. **Write tests for song popularity endpoints**
-4. Create song popularity endpoints to pass tests
-5. **Write tests for feed generation**
-6. Implement user feed generation to pass tests
-7. **Write tests for pagination and filtering**
-8. Implement pagination and filtering features with test coverage
-
-### Step 11: Media Storage (TDD)
-1. **Write tests for file upload and retrieval**
-2. Configure AWS S3 integration with mocks for testing
-3. **Write tests for presigned URL generation**
-4. Implement file upload endpoints to pass tests
-5. **Write tests for media validation**
-6. Implement media file validation with test coverage
-
-### 🔍 MILESTONE 3: Backend API Complete
-**Verification Criteria:**
-- All API endpoints return correct responses
-- Search functionality works with various query parameters
-- Pagination correctly limits and offsets results
-- Media files can be uploaded and retrieved
-- API documentation (Swagger) is complete and accurate
-- All backend tests pass with >90% coverage
-
-**Verification Commands:**
-```
-# Test search functionality
-curl "http://localhost:8000/api/songs/search?q=test&page=1&limit=10" -H "Authorization: Bearer $TOKEN"
-
-# Test file upload
-curl -X POST http://localhost:8000/api/songs/upload -F "file=@test.mp3" -H "Authorization: Bearer $TOKEN"
-
-# Test feed generation
-curl http://localhost:8000/api/users/1/feed -H "Authorization: Bearer $TOKEN"
-
-# Run all backend tests
-cd backend && pytest
-```
-
 ## Phase 3: Frontend Foundation
 
-### Step 12: Frontend Project Setup
+### Step 10: Frontend Project Setup
 1. Initialize React with TypeScript
 2. Configure build system
 3. Set up routing with React Router
 4. Create directory structure for components, pages, hooks, and tests
 5. Set up frontend testing environment (Jest, React Testing Library)
 
-### Step 13: State Management (TDD)
+### Step 11: State Management (TDD)
 1. **Write tests for Redux store configuration**
 2. Configure Redux Toolkit store to pass tests
 3. **Write tests for API integration hooks**
@@ -206,7 +164,7 @@ cd backend && pytest
 5. **Write tests for context providers**
 6. Create context providers and API client utilities with test coverage
 
-### Step 14: Authentication Components (TDD)
+### Step 12: Authentication Components (TDD)
 1. **Write tests for LoginForm component**
 2. Create LoginForm component to pass tests
 3. **Write tests for RegisterForm component**
@@ -214,7 +172,7 @@ cd backend && pytest
 5. **Write tests for authentication flow**
 6. Build user profile components and authentication flow with test coverage
 
-### Step 15: Layout & Navigation (TDD)
+### Step 13: Layout & Navigation (TDD)
 1. **Write tests for MainLayout component**
 2. Create MainLayout component to pass tests
 3. **Write tests for Navbar component**
@@ -224,7 +182,7 @@ cd backend && pytest
 7. **Write tests for protected routes**
 8. Implement protected routes with test coverage
 
-### 🔍 MILESTONE 4: Frontend Foundation Ready
+### 🔍 MILESTONE 3: Frontend Foundation Ready
 **Verification Criteria:**
 - Frontend application builds without errors
 - Redux store is properly configured with slices
@@ -251,7 +209,7 @@ cd frontend && npm test -- --coverage
 
 ## Phase 4: Core Frontend Features
 
-### Step 16: Song Components (TDD)
+### Step 14: Song Components (TDD)
 1. **Write tests for SongCard component**
 2. Build SongCard component to pass tests
 3. **Write tests for SongList component**
@@ -261,7 +219,7 @@ cd frontend && npm test -- --coverage
 7. **Write tests for song search interface**
 8. Create song search interface with test coverage
 
-### Step 17: User Components (TDD)
+### Step 15: User Components (TDD)
 1. **Write tests for UserProfile page**
 2. Build UserProfile page to pass tests
 3. **Write tests for UserFeed page**
@@ -271,7 +229,7 @@ cd frontend && npm test -- --coverage
 7. **Write tests for FavoriteButton component**
 8. Create FavoriteButton component with test coverage
 
-### Step 18: Blog Components (TDD)
+### Step 16: Blog Components (TDD)
 1. **Write tests for BlogList component**
 2. Build BlogList component to pass tests
 3. **Write tests for BlogDetail page**
@@ -281,7 +239,7 @@ cd frontend && npm test -- --coverage
 7. **Write tests for blog following functionality**
 8. Add blog following functionality with test coverage
 
-### Step 19: Common Components (TDD)
+### Step 17: Common Components (TDD)
 1. **Write tests for comment components**
 2. Create CommentList and CommentForm components to pass tests
 3. **Write tests for TagList component**
@@ -291,7 +249,17 @@ cd frontend && npm test -- --coverage
 7. **Write tests for Modal component**
 8. Build Modal component and system with test coverage
 
-### 🔍 MILESTONE 5: Core UI Components Complete
+### Step 18: Audio Player (TDD)
+1. **Write tests for player context and hooks**
+2. Integrate Howler.js and create PlayerContext to pass tests
+3. **Write tests for player control components**
+4. Build player controls UI to pass tests
+5. **Write tests for queue management**
+6. Implement queue management to pass tests
+7. **Write tests for player persistence**
+8. Add player persistence with test coverage
+
+### 🔍 MILESTONE 4: Core UI Components Complete
 **Verification Criteria:**
 - All core components render correctly
 - Components handle empty, loading, and error states
@@ -299,6 +267,11 @@ cd frontend && npm test -- --coverage
 - Responsive design works on mobile, tablet, and desktop
 - Components maintain style guide consistency
 - All component tests pass with >90% coverage
+- Audio player successfully plays tracks
+- Player controls work (play, pause, skip, volume)
+- Queue management functions correctly
+- Player state persists across page navigation
+- User can interact with all core features (browse, search, favorite, follow)
 
 **Verification Commands:**
 ```
@@ -310,29 +283,7 @@ cd frontend && npm run storybook
 
 # Check responsive design with Cypress viewport testing
 cd frontend && npx cypress run --spec "cypress/e2e/responsive.cy.js"
-```
 
-### Step 20: Audio Player (TDD)
-1. **Write tests for player context and hooks**
-2. Integrate Howler.js and create PlayerContext to pass tests
-3. **Write tests for player control components**
-4. Build player controls UI to pass tests
-5. **Write tests for queue management**
-6. Implement queue management to pass tests
-7. **Write tests for player persistence**
-8. Add player persistence with test coverage
-
-### 🔍 MILESTONE 6: Frontend Features Complete
-**Verification Criteria:**
-- Audio player successfully plays tracks
-- Player controls work (play, pause, skip, volume)
-- Queue management functions correctly
-- Player state persists across page navigation
-- User can interact with all core features (browse, search, favorite, follow)
-- All frontend integration tests pass
-
-**Verification Commands:**
-```
 # Run integration tests
 cd frontend && npm test -- --testPathPattern=integration
 
@@ -343,7 +294,51 @@ cd frontend && npm test -- --testPathPattern=components/player
 cd frontend && npx cypress run --spec "cypress/e2e/user-journey.cy.js"
 ```
 
-## Phase 5: Blog Scraper Service
+## Phase 5: Advanced API Features
+
+### Step 19: Advanced API Features (TDD)
+1. **Write tests for search functionality**
+2. Implement search functionality to pass tests
+3. **Write tests for song popularity endpoints**
+4. Create song popularity endpoints to pass tests
+5. **Write tests for feed generation**
+6. Implement user feed generation to pass tests
+7. **Write tests for pagination and filtering**
+8. Implement pagination and filtering features with test coverage
+
+### Step 20: Media Storage (TDD)
+1. **Write tests for file upload and retrieval**
+2. Configure AWS S3 integration with mocks for testing
+3. **Write tests for presigned URL generation**
+4. Implement file upload endpoints to pass tests
+5. **Write tests for media validation**
+6. Implement media file validation with test coverage
+
+### 🔍 MILESTONE 5: Advanced Features Complete
+**Verification Criteria:**
+- All API endpoints return correct responses
+- Search functionality works with various query parameters
+- Pagination correctly limits and offsets results
+- Media files can be uploaded and retrieved
+- API documentation (Swagger) is complete and accurate
+- All backend advanced feature tests pass with >90% coverage
+
+**Verification Commands:**
+```
+# Test search functionality
+curl "http://localhost:8000/api/songs/search?q=test&page=1&limit=10" -H "Authorization: Bearer $TOKEN"
+
+# Test file upload
+curl -X POST http://localhost:8000/api/songs/upload -F "file=@test.mp3" -H "Authorization: Bearer $TOKEN"
+
+# Test feed generation
+curl http://localhost:8000/api/users/1/feed -H "Authorization: Bearer $TOKEN"
+
+# Run all backend tests
+cd backend && pytest
+```
+
+## Phase 6: Blog Scraper Service
 
 ### Step 21: Scraper Setup (TDD)
 1. **Write tests for scraper service configuration**
@@ -373,7 +368,7 @@ cd frontend && npx cypress run --spec "cypress/e2e/user-journey.cy.js"
 7. **Write tests for tag detection and notifications**
 8. Build tag detection and notification systems with test coverage
 
-### 🔍 MILESTONE 7: Scraper Service Operational
+### 🔍 MILESTONE 6: Scraper Service Operational
 **Verification Criteria:**
 - Scraper can fetch content from test blog sources
 - Content extraction correctly identifies songs and metadata
@@ -398,7 +393,7 @@ cd scraper && celery -A app.tasks status
 cd backend && python -c "from app.db.session import SessionLocal; from app.models import Song; db = SessionLocal(); print(db.query(Song).filter(Song.source=='scraper').count())"
 ```
 
-## Phase 6: Integration & Performance
+## Phase 7: Integration & Performance
 
 ### Step 24: API Integration
 1. **Write integration tests for frontend-backend communication**
@@ -424,7 +419,7 @@ cd backend && python -c "from app.db.session import SessionLocal; from app.model
 4. Add frontend lazy loading and code splitting
 5. Optimize asset loading with measured performance improvements
 
-### 🔍 MILESTONE 8: Integration Complete
+### 🔍 MILESTONE 7: Integration Complete
 **Verification Criteria:**
 - End-to-end flows work correctly (user registration to content consumption)
 - Error handling covers edge cases and network issues
@@ -449,7 +444,7 @@ cd frontend && npx playwright test
 redis-cli --scan --pattern "listener:cache:*" | wc -l
 ```
 
-## Phase 7: Deployment & Infrastructure
+## Phase 8: Deployment & Infrastructure
 
 ### Step 27: AWS Infrastructure Setup
 1. **Write infrastructure as code tests (using Terraform or CloudFormation)**
@@ -480,7 +475,7 @@ redis-cli --scan --pattern "listener:cache:*" | wc -l
 5. Set up ELK Stack with verified collection
 6. Configure alert notifications with test scenarios
 
-### 🔍 MILESTONE 9: Deployment Ready
+### 🔍 MILESTONE 8: Deployment Ready
 **Verification Criteria:**
 - Infrastructure as code provisions resources correctly
 - Backend services deploy successfully to staging environment
@@ -509,7 +504,7 @@ curl -s https://api-staging.listenerapp.com/log-test
 # Then check ELK for the log entry
 ```
 
-## Phase 8: Data Migration & Launch
+## Phase 9: Data Migration & Launch
 
 ### Step 31: Data Migration (TDD)
 1. **Write tests for data export accuracy**
@@ -542,7 +537,7 @@ curl -s https://api-staging.listenerapp.com/log-test
 4. Monitor system performance against baselines
 5. Address post-launch issues with regression tests
 
-### 🔍 MILESTONE 10: Production Launch
+### 🔍 MILESTONE 9: Production Launch
 **Verification Criteria:**
 - Data migration is complete with verified integrity
 - Security audits show no critical vulnerabilities
@@ -571,7 +566,7 @@ curl -I https://listenerapp.com
 open https://grafana.listenerapp.com/d/listener-production
 ```
 
-## Phase 9: Post-Launch Support
+## Phase 10: Post-Launch Support
 
 ### Step 35: Maintenance Setup
 1. Establish regular update schedule with test requirements
@@ -587,7 +582,7 @@ open https://grafana.listenerapp.com/d/listener-production
 4. Establish emergency response protocol with test plans
 5. Create user feedback collection and analysis system
 
-### 🔍 MILESTONE 11: Operational Stability
+### 🔍 MILESTONE 10: Operational Stability
 **Verification Criteria:**
 - Maintenance procedures are documented and tested
 - Automated backup/restore process works correctly
@@ -611,7 +606,7 @@ curl -s https://status.listenerapp.com/api/uptime | jq '.last_30_days'
 npm run security-scan
 ```
 
-## Phase 10: Future Development
+## Phase 11: Future Development
 
 ### Step 37: Feature Expansion Planning
 1. Prioritize potential enhancements with test considerations
@@ -627,7 +622,7 @@ npm run security-scan
 4. Create CDN optimization strategy with performance benchmarks
 5. Design caching improvements with measurable outcomes
 
-### 🔍 MILESTONE 12: Future Ready
+### 🔍 MILESTONE 11: Future Ready
 **Verification Criteria:**
 - Feature roadmap includes test criteria for each item
 - Development priorities are based on user feedback data
