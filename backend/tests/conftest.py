@@ -10,6 +10,7 @@ from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.pool import NullPool
 from httpx import AsyncClient
+import pytest_asyncio
 
 # Add backend directory to Python path
 backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -22,6 +23,7 @@ try:
     from app.db.session import get_db, get_async_db
     from app.models.user import User
     from app.services.auth import create_access_token
+    from app.api import dependencies as deps
     from main import app
     from tests.factories import UserFactory, SongFactory, BlogFactory
 except ImportError as e:
@@ -69,21 +71,22 @@ def db() -> Generator[Session, None, None]:
 
 
 # Fixture for async DB sessions
-@pytest.fixture(scope="function")
-async def async_db() -> AsyncGenerator[AsyncSession, None]:
-    async with AsyncTestingSessionLocal() as db:
-        # Create tables if they don't exist
-        async with async_engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        
+@pytest_asyncio.fixture(scope="function")
+async def async_db() -> AsyncSession:
+    # Create tables if they don't exist
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    # Create a DB session
+    async with AsyncTestingSessionLocal() as session:
         try:
-            yield db
+            yield session
         finally:
-            await db.close()
-        
-        # Drop tables after test
-        async with async_engine.begin() as conn:
-            await conn.run_sync(Base.metadata.drop_all)
+            await session.close()
+    
+    # Drop tables after test
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
 
 # Alias for db fixture for backward compatibility
@@ -108,8 +111,26 @@ def client(db: Session) -> Generator[TestClient, None, None]:
         finally:
             pass
     
-    # Apply the override
+    # Creating a test user for auth
+    user = User(
+        email="test_client_user@example.com",
+        username="test_client_user",
+        password="password123",
+        is_active=True
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    # Create a mock for the current user dependency
+    def override_get_current_user():
+        return user
+    
+    # Apply the overrides
     app.dependency_overrides[get_db] = override_get_db
+    app.dependency_overrides[deps.get_current_user] = override_get_current_user
+    app.dependency_overrides[deps.get_current_active_user] = override_get_current_user
+    app.dependency_overrides[deps.get_current_active_superuser] = override_get_current_user
     
     # Create test client
     with TestClient(app) as test_client:
@@ -129,8 +150,26 @@ async def async_client(async_db: AsyncSession) -> AsyncGenerator[AsyncClient, No
         finally:
             pass
     
-    # Apply the override
+    # Creating a test user for auth
+    user = User(
+        email="test_async_client_user@example.com",
+        username="test_async_client_user",
+        password="password123",
+        is_active=True
+    )
+    async_db.add(user)
+    await async_db.commit()
+    await async_db.refresh(user)
+    
+    # Override auth dependencies to use our test user
+    async def override_get_current_user_async():
+        return user
+        
+    # Apply the overrides
     app.dependency_overrides[get_async_db] = override_get_async_db
+    app.dependency_overrides[deps.get_current_user_async] = override_get_current_user_async
+    app.dependency_overrides[deps.get_current_active_user_async] = override_get_current_user_async
+    app.dependency_overrides[deps.get_current_active_superuser_async] = override_get_current_user_async
     
     # Create async test client
     async with AsyncClient(app=app, base_url="http://test") as test_client:
