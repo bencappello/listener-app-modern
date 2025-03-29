@@ -2,8 +2,8 @@ import os
 import secrets
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import field_validator, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import validator
+from pydantic import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -40,8 +40,7 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION: int = 1440  # 24 hours in minutes
     
-    @field_validator("JWT_EXPIRATION", mode="before")
-    @classmethod
+    @validator("JWT_EXPIRATION", pre=True)
     def parse_jwt_expiration(cls, v):
         """Parse JWT expiration from string to int."""
         if isinstance(v, str):
@@ -59,10 +58,9 @@ class Settings(BaseSettings):
     # Frontend
     FRONTEND_URL: str = "http://localhost:3000"
     
-    model_config = SettingsConfigDict(
-        env_file=".env", 
-        case_sensitive=True
-    )
+    class Config:
+        env_file = ".env"
+        case_sensitive = True
 
 
 # Create settings instance
