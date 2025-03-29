@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: listener-app-prod
+  labels:
+    app: frontend
+    environment: production
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+        environment: production
+    spec:
+      containers:
+      - name: frontend
+        image: ${REGISTRY}/${FRONTEND_IMAGE_NAME}:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 20
+        env:
+        - name: REACT_APP_API_URL
+          valueFrom:
+            configMapKeyRef:
+              name: listener-app-config
+              key: REACT_APP_API_URL
+        - name: REACT_APP_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: listener-app-config
+              key: REACT_APP_ENV
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-svc
+  namespace: listener-app-prod
+spec:
+  selector:
+    app: frontend
+  ports:
+  - port: 80
+    targetPort: 80
+  type: ClusterIP 

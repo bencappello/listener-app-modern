@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: listener-app-config
+  namespace: listener-app-prod
+data:
+  # Backend configuration
+  ENVIRONMENT: "production"
+  BACKEND_CORS_ORIGINS: '["https://listener-app.example.com"]'
+  PROJECT_NAME: "Listener App API"
+  API_V1_STR: "/api/v1"
+  SERVER_HOST: "https://api.listener-app.example.com"
+  
+  # Scraper configuration
+  SCRAPING_INTERVAL_MINUTES: "60"
+  MAX_SONGS_PER_BLOG: "100"
+  
+  # Frontend configuration
+  REACT_APP_API_URL: "https://api.listener-app.example.com"
+  REACT_APP_ENV: "production" 

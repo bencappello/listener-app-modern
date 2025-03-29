@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scraper
+  namespace: listener-app-prod
+  labels:
+    app: scraper
+    environment: production
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scraper
+  template:
+    metadata:
+      labels:
+        app: scraper
+        environment: production
+    spec:
+      containers:
+      - name: scraper
+        image: ${REGISTRY}/${SCRAPER_IMAGE_NAME}:latest
+        imagePullPolicy: Always
+        resources:
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+        envFrom:
+        - configMapRef:
+            name: listener-app-config
+        - secretRef:
+            name: listener-app-secrets
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: scheduled-scraper
+  namespace: listener-app-prod
+spec:
+  schedule: "0 */1 * * *"  # Run every hour
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: scraper-job
+            environment: production
+        spec:
+          containers:
+          - name: scraper
+            image: ${REGISTRY}/${SCRAPER_IMAGE_NAME}:latest
+            imagePullPolicy: Always
+            args:
+            - "run-scrapers"
+            - "--all"
+            resources:
+              limits:
+                cpu: "800m"
+                memory: "1024Mi"
+              requests:
+                cpu: "400m"
+                memory: "512Mi"
+            envFrom:
+            - configMapRef:
+                name: listener-app-config
+            - secretRef:
+                name: listener-app-secrets
+          restartPolicy: OnFailure 
