@@ -104,5 +104,68 @@ cd frontend
 npm test
 ```
 
+## Deployment Automation
+
+The Listener App includes comprehensive deployment automation scripts to simplify the deployment process for both development and production environments. These scripts are located in the `scripts/deployment` directory.
+
+### Available Scripts
+
+- **Main entry point**: `scripts/deployment/run.sh`
+  - Provides access to all deployment operations through a unified interface
+  - Use `./scripts/deployment/run.sh help` to see all available commands
+
+- **Environment Setup**: `setup-environment.sh`
+  - Sets up environment configuration for deployment
+  - Creates environment files and configures Kubernetes resources
+
+- **Deployment**: `deploy-dev.sh` and `deploy-prod.sh`
+  - Deploys the application to development or production environments
+  - Handles configmaps, secrets, and applies all necessary Kubernetes manifests
+
+- **Status Checking**: `check-status.sh`
+  - Monitors the status of deployments, pods, and services
+  - Performs health checks on deployed applications
+
+- **Scaling**: `scale.sh`
+  - Scales application components (backend, frontend, scraper)
+  - Adjusts the number of replicas based on load requirements
+
+- **Rollback**: `rollback.sh`
+  - Rolls back deployments to previous versions if needed
+  - Supports rolling back to specific revisions
+
+- **Secret Management**: `manage-secrets.sh`
+  - Lists, retrieves, sets, and deletes Kubernetes secrets
+  - Safely manages sensitive information for both environments
+
+### Quickstart
+
+1. **Set up the environment**:
+   ```bash
+   ./scripts/deployment/run.sh setup -e dev
+   ```
+
+2. **Deploy the application**:
+   ```bash
+   ./scripts/deployment/run.sh deploy -e dev
+   ```
+
+3. **Check deployment status**:
+   ```bash
+   ./scripts/deployment/run.sh status -e dev
+   ```
+
+4. **Scale a component**:
+   ```bash
+   ./scripts/deployment/run.sh scale -e dev -c backend -r 3
+   ```
+
+5. **Roll back if needed**:
+   ```bash
+   ./scripts/deployment/run.sh rollback -e dev -c backend
+   ```
+
+For more detailed documentation on Kubernetes deployment, see the [k8s/README.md](k8s/README.md) file.
+
 ## License
 All rights reserved.
