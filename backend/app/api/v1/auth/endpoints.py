@@ -1,7 +1,7 @@
 from datetime import timedelta
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status, Form
+from fastapi import APIRouter, Depends, HTTPException, status, Form, Security
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -11,7 +11,7 @@ from app.db.session import get_db
 from app.models.user import User
 from app.schemas.auth import Token, LogoutResponse
 from app.schemas.users.user import UserCreate, User as UserSchema
-from app.services.auth import create_access_token, verify_token
+from app.services.auth import create_access_token, verify_token, blacklist_token
 
 router = APIRouter()
 
@@ -145,17 +145,19 @@ async def login(
 
 @router.post("/logout", response_model=LogoutResponse)
 async def logout(
+    token: str = Security(oauth2_scheme),
     current_user: User = Depends(get_current_user)
 ) -> Any:
     """
     Logout user.
     
     Args:
+        token: JWT token to invalidate
         current_user: Current authenticated user
         
     Returns:
         LogoutResponse: Logout response
     """
-    # In a real app, you might want to invalidate the token here
-    # For simplicity, we'll just return a success message
+    # Invalidate the token by adding it to the blacklist
+    blacklist_token(token)
     return {"message": "Successfully logged out"} 

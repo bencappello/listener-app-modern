@@ -1,11 +1,15 @@
 from datetime import datetime, timedelta
-from typing import Optional, Union, Dict, Any
+from typing import Optional, Union, Dict, Any, Set
 
 from jose import jwt, JWTError
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.models.user import User
+
+# In-memory token blacklist
+# In a production app, this would be in Redis or another distributed store
+token_blacklist: Set[str] = set()
 
 
 def create_access_token(
@@ -54,6 +58,10 @@ def verify_token(token: str, db: Session) -> Optional[User]:
         Optional[User]: User if token is valid, None otherwise
     """
     try:
+        # Check if token is blacklisted
+        if token in token_blacklist:
+            return None
+        
         # Decode JWT
         payload = jwt.decode(
             token, 
@@ -72,3 +80,13 @@ def verify_token(token: str, db: Session) -> Optional[User]:
     except JWTError:
         # Return None if token is invalid
         raise 
+
+
+def blacklist_token(token: str) -> None:
+    """
+    Add a token to the blacklist.
+    
+    Args:
+        token: JWT token to blacklist
+    """
+    token_blacklist.add(token) 
