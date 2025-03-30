@@ -1,7 +1,7 @@
 import React from 'react';
 import { screen } from '@testing-library/react';
 import { render } from '../../test-utils/testing-library-utils';
-import { MainLayout } from './MainLayout';
+import MainLayout from './MainLayout';
 
 // Mock children component
 const MockChildComponent = () => <div data-testid="mock-child">Child Component</div>;
