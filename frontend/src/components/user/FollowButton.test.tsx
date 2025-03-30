@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { render } from '../../test-utils/testing-library-utils';
 import FollowButton from './FollowButton';
 import * as userService from '../../services/user.service';
+import { User } from '../../types/entities';
 
 // Mock the user service
 jest.mock('../../services/user.service');
@@ -12,6 +13,15 @@ const mockUserService = userService as jest.Mocked<typeof userService>;
 describe('FollowButton Component', () => {
   const userId = '1';
   const onFollowChange = jest.fn();
+  
+  // Complete User mock with required properties
+  const mockUser: User = {
+    id: userId,
+    username: 'testuser',
+    email: 'test@example.com',
+    createdAt: '2023-01-01',
+    isFollowing: true
+  };
   
   beforeEach(() => {
     jest.clearAllMocks();
@@ -34,11 +44,7 @@ describe('FollowButton Component', () => {
   });
   
   it('calls toggleFollow service when button is clicked', async () => {
-    mockUserService.toggleFollow.mockResolvedValue({
-      id: userId,
-      username: 'testuser',
-      isFollowing: true,
-    });
+    mockUserService.toggleFollow.mockResolvedValue(mockUser);
     
     render(<FollowButton userId={userId} isFollowing={false} onFollowChange={onFollowChange} />);
     
@@ -48,6 +54,7 @@ describe('FollowButton Component', () => {
     await waitFor(() => {
       expect(mockUserService.toggleFollow).toHaveBeenCalledWith(userId);
     });
+    
     expect(onFollowChange).toHaveBeenCalledWith(true);
   });
   
@@ -55,11 +62,7 @@ describe('FollowButton Component', () => {
     // Delay the resolution of toggleFollow to see loading state
     mockUserService.toggleFollow.mockImplementation(() => 
       new Promise(resolve => 
-        setTimeout(() => resolve({
-          id: userId,
-          username: 'testuser',
-          isFollowing: true,
-        }), 100)
+        setTimeout(() => resolve(mockUser), 100)
       )
     );
     
@@ -76,8 +79,9 @@ describe('FollowButton Component', () => {
     // Wait for completion
     await waitFor(() => {
       expect(mockUserService.toggleFollow).toHaveBeenCalledWith(userId);
-      expect(onFollowChange).toHaveBeenCalledWith(true);
     });
+    
+    expect(onFollowChange).toHaveBeenCalledWith(true);
   });
   
   it('handles errors when toggle follow fails', async () => {
@@ -95,9 +99,10 @@ describe('FollowButton Component', () => {
     
     await waitFor(() => {
       expect(mockUserService.toggleFollow).toHaveBeenCalledWith(userId);
-      expect(console.error).toHaveBeenCalled();
-      expect(onFollowChange).not.toHaveBeenCalled();
     });
+    
+    expect(console.error).toHaveBeenCalled();
+    expect(onFollowChange).not.toHaveBeenCalled();
     
     // Restore console.error
     console.error = originalConsoleError;

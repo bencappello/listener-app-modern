@@ -5,7 +5,7 @@ import { render } from '../../test-utils/testing-library-utils';
 import { UserFeed } from './UserFeed';
 import * as songService from '../../services/song.service';
 import * as userService from '../../services/user.service';
-import { Song } from '../../types/entities';
+import { Song, PaginatedResponse } from '../../types/entities';
 
 // Mock services
 jest.mock('../../services/song.service');
@@ -46,6 +46,39 @@ const mockSongs: Song[] = [
   }
 ];
 
+// Mock paginated response
+const mockPaginatedResponse: PaginatedResponse<Song> = {
+  items: mockSongs,
+  pagination: {
+    page: 1,
+    total: 2,
+    total_pages: 1,
+    per_page: 10
+  }
+};
+
+// Empty response for testing empty state
+const mockEmptyResponse: PaginatedResponse<Song> = {
+  items: [],
+  pagination: {
+    page: 1,
+    total: 0,
+    total_pages: 0,
+    per_page: 10
+  }
+};
+
+// Response with multiple pages
+const mockMultiPageResponse: PaginatedResponse<Song> = {
+  items: mockSongs,
+  pagination: {
+    page: 1,
+    total: 20,
+    total_pages: 2,
+    per_page: 10
+  }
+};
+
 describe('UserFeed Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -59,12 +92,7 @@ describe('UserFeed Component', () => {
       createdAt: '2023-01-01',
       isCurrentUser: true
     });
-    mockSongService.getSongs.mockResolvedValue({
-      data: mockSongs,
-      total: mockSongs.length,
-      page: 1,
-      limit: 10
-    });
+    mockSongService.getSongs.mockResolvedValue(mockPaginatedResponse);
   });
 
   it('renders the user feed page with heading', async () => {
@@ -103,12 +131,7 @@ describe('UserFeed Component', () => {
 
   it('handles empty feed state', async () => {
     // Mock empty feed
-    mockSongService.getSongs.mockResolvedValue({
-      data: [],
-      total: 0,
-      page: 1,
-      limit: 10
-    });
+    mockSongService.getSongs.mockResolvedValue(mockEmptyResponse);
     
     render(<UserFeed />);
     
@@ -134,7 +157,19 @@ describe('UserFeed Component', () => {
   });
 
   it('calls toggleFavorite when favorite button is clicked', async () => {
-    mockSongService.toggleFavorite.mockResolvedValue({ ...mockSongs[0], isFavorite: true });
+    // Setup mock for toggleFavorite
+    const updatedSong: Song = {
+      ...mockSongs[0],
+      isFavorite: true,
+      artist: 'Test Artist 1',
+      blogId: '1',
+      blogName: 'Test Blog 1',
+      audioUrl: 'https://example.com/song1.mp3',
+      postUrl: 'https://example.com/post1',
+      postDate: '2023-01-01'
+    };
+    
+    mockSongService.toggleFavorite.mockResolvedValue(updatedSong);
     
     render(<UserFeed />);
     
@@ -155,12 +190,7 @@ describe('UserFeed Component', () => {
 
   it('supports pagination for feed songs', async () => {
     // Mock pagination support
-    mockSongService.getSongs.mockResolvedValue({
-      data: mockSongs,
-      total: 20, // Total more than items per page
-      page: 1,
-      limit: 10
-    });
+    mockSongService.getSongs.mockResolvedValue(mockMultiPageResponse);
     
     render(<UserFeed />);
     
@@ -174,7 +204,6 @@ describe('UserFeed Component', () => {
     });
     
     // Check if pagination is displayed
-    // Note: This test assumes your Pagination component has page navigation buttons with accessible roles
     const nextPageButton = screen.getByLabelText('Go to next page');
     expect(nextPageButton).toBeInTheDocument();
     

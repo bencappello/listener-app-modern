@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { render } from '../../test-utils/testing-library-utils';
 import FavoriteButton from './FavoriteButton';
 import * as songService from '../../services/song.service';
+import { Song } from '../../types/entities';
 
 // Mock the song service
 jest.mock('../../services/song.service');
@@ -12,6 +13,19 @@ const mockSongService = songService as jest.Mocked<typeof songService>;
 describe('FavoriteButton Component', () => {
   const songId = '1';
   const onFavoriteChange = jest.fn();
+  
+  // Complete Song mock with required properties
+  const mockSong: Song = {
+    id: songId,
+    title: 'Test Song',
+    artist: 'Test Artist',
+    blogId: '1',
+    blogName: 'Test Blog',
+    audioUrl: 'https://example.com/song.mp3',
+    postUrl: 'https://example.com/post',
+    postDate: '2023-01-01',
+    isFavorite: true
+  };
   
   beforeEach(() => {
     jest.clearAllMocks();
@@ -32,11 +46,7 @@ describe('FavoriteButton Component', () => {
   });
   
   it('calls toggleFavorite service when button is clicked', async () => {
-    mockSongService.toggleFavorite.mockResolvedValue({
-      id: songId,
-      title: 'Test Song',
-      isFavorite: true,
-    });
+    mockSongService.toggleFavorite.mockResolvedValue(mockSong);
     
     render(<FavoriteButton songId={songId} isFavorite={false} onFavoriteChange={onFavoriteChange} />);
     
@@ -54,11 +64,7 @@ describe('FavoriteButton Component', () => {
     // Delay the resolution of toggleFavorite to see loading state
     mockSongService.toggleFavorite.mockImplementation(() => 
       new Promise(resolve => 
-        setTimeout(() => resolve({
-          id: songId,
-          title: 'Test Song',
-          isFavorite: true,
-        }), 100)
+        setTimeout(() => resolve(mockSong), 100)
       )
     );
     

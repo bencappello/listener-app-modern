@@ -1,6 +1,6 @@
 import api from './api';
 import { User } from '../types/entities';
-import { Song } from '../types/entities';
+import { Song, PaginatedResponse } from '../types/entities';
 
 // Base API endpoints
 const USERS_URL = '/users';
@@ -27,7 +27,7 @@ export const getCurrentUser = async (): Promise<User> => {
 export const getUserFavorites = async (
   userId: string | number,
   params?: { page?: number; limit?: number }
-): Promise<{ data: Song[]; total: number }> => {
+): Promise<{ data: Song[]; total: number; page?: number; limit?: number }> => {
   const response = await api.get(`${USERS_URL}/${userId}/favorites`, { params });
   return response.data;
 };
