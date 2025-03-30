@@ -17,6 +17,7 @@
     "@types/node": "^20.0.0",
     "@types/react": "^18.2.5",
     "@types/react-dom": "^18.2.4",
+    "ajv": "^8.17.1",
     "axios": "^1.4.0",
     "framer-motion": "^10.12.8",
     "howler": "^2.2.3",
