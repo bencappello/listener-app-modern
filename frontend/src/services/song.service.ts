@@ -1,19 +1,22 @@
 import api from './api';
-import { Song } from '../types/entities';
+import { Song, PaginatedResponse } from '../types/entities';
 
 // Base API endpoints
 const SONGS_URL = '/songs';
 
+interface GetSongsParams {
+  page?: number;
+  limit?: number;
+  sort?: string;
+  feed?: boolean;
+  query?: string;
+  tags?: string[];
+}
+
 /**
  * Get a list of songs with optional filters
  */
-export const getSongs = async (params?: { 
-  page?: number; 
-  limit?: number;
-  query?: string;
-  tags?: string[];
-  blogId?: string | number;
-}): Promise<{ data: Song[]; total: number; }> => {
+export const getSongs = async (params: GetSongsParams = {}): Promise<PaginatedResponse<Song>> => {
   const response = await api.get(SONGS_URL, { params });
   return response.data;
 };
@@ -29,8 +32,8 @@ export const getSongById = async (id: string | number): Promise<Song> => {
 /**
  * Toggle favorite status for a song
  */
-export const toggleFavorite = async (id: string | number): Promise<Song> => {
-  const response = await api.post(`${SONGS_URL}/${id}/favorite`);
+export const toggleFavorite = async (songId: string | number): Promise<Song> => {
+  const response = await api.post(`${SONGS_URL}/${songId}/favorite`);
   return response.data;
 };
 
@@ -75,16 +78,32 @@ export const logSongPlay = async (id: string | number): Promise<void> => {
 /**
  * Search for songs by text query
  */
-export const searchSongs = async (query: string, params?: {
-  page?: number;
-  limit?: number;
-  tags?: string[];
-}): Promise<{ data: Song[]; total: number; }> => {
+export const searchSongs = async (query: string, params: { page?: number; limit?: number } = {}): Promise<PaginatedResponse<Song>> => {
   const response = await api.get(`${SONGS_URL}/search`, { 
     params: { 
       q: query,
-      ...params 
+      ...params
     } 
   });
+  return response.data;
+};
+
+export const getFeedSongs = async (params: { page?: number; limit?: number } = {}): Promise<PaginatedResponse<Song>> => {
+  const response = await api.get(`${SONGS_URL}/feed`, { params });
+  return response.data;
+};
+
+export const getSongsByTag = async (tag: string, params: { page?: number; limit?: number } = {}): Promise<PaginatedResponse<Song>> => {
+  const response = await api.get(`/tags/${tag}/songs`, { params });
+  return response.data;
+};
+
+export const getSongsByBlog = async (blogId: string | number, params: { page?: number; limit?: number } = {}): Promise<PaginatedResponse<Song>> => {
+  const response = await api.get(`/blogs/${blogId}/songs`, { params });
+  return response.data;
+};
+
+export const getPopularSongs = async (params: { page?: number; limit?: number; period?: string } = {}): Promise<PaginatedResponse<Song>> => {
+  const response = await api.get(`${SONGS_URL}/popular`, { params });
   return response.data;
 }; 
