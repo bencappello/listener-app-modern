@@ -1,10 +1,15 @@
 export interface User {
-  id: number;
+  id: number | string;
   username: string;
   email: string;
   profileImage?: string;
+  avatarUrl?: string;
   bio?: string;
   createdAt: string;
+  followersCount?: number;
+  followingCount?: number;
+  isFollowing?: boolean;
+  isCurrentUser?: boolean;
 }
 
 export interface Blog {

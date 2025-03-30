@@ -1,16 +1,14 @@
 import React from 'react';
 import {
-  Card,
-  CardContent,
-  Typography,
-  CardMedia,
-  IconButton,
   Box,
+  Image,
+  Text,
   Link,
-  Stack,
-  useTheme
-} from '@mui/material';
-import { FavoriteBorder, Favorite, PlayArrow } from '@mui/icons-material';
+  Flex,
+  IconButton,
+  useColorModeValue
+} from '@chakra-ui/react';
+import { FaHeart, FaRegHeart, FaPlay } from 'react-icons/fa';
 import { Song } from '../../types/entities';
 
 interface SongCardProps {
@@ -20,104 +18,111 @@ interface SongCardProps {
 }
 
 const SongCard: React.FC<SongCardProps> = ({ song, onToggleFavorite, onPlay }) => {
-  const theme = useTheme();
   const { title, artist, blogName, imageUrl, postUrl, isFavorite } = song;
   
   const placeholderImage = '/assets/images/music-placeholder.jpg';
   const displayImage = imageUrl && imageUrl.length > 0 ? imageUrl : placeholderImage;
+  
+  const bgOverlay = useColorModeValue('rgba(0, 0, 0, 0.6)', 'rgba(0, 0, 0, 0.7)');
+  const heartColor = useColorModeValue('red.500', 'red.300');
+  const cardBg = useColorModeValue('white', 'gray.700');
+  const cardBorderColor = useColorModeValue('gray.200', 'gray.600');
 
   return (
-    <Card 
-      sx={{ 
-        display: 'flex', 
-        flexDirection: 'column',
-        height: '100%',
-        transition: 'transform 0.2s',
-        '&:hover': {
-          transform: 'translateY(-4px)',
-          boxShadow: 4
-        }
+    <Box 
+      borderWidth="1px"
+      borderRadius="lg"
+      overflow="hidden"
+      bg={cardBg}
+      borderColor={cardBorderColor}
+      transition="transform 0.2s, box-shadow 0.2s"
+      _hover={{
+        transform: 'translateY(-4px)',
+        boxShadow: 'lg'
       }}
+      height="100%"
+      display="flex"
+      flexDirection="column"
     >
-      <Box 
-        sx={{ 
-          position: 'relative',
-          paddingTop: '100%', // 1:1 aspect ratio
-        }}
-      >
-        <CardMedia
-          component="img"
+      <Box position="relative" paddingTop="100%">
+        <Image
+          position="absolute"
+          top="0"
+          left="0"
+          width="100%"
+          height="100%"
+          objectFit="cover"
+          src={displayImage}
           alt={title}
-          image={displayImage}
-          sx={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover'
-          }}
+          fallbackSrc={placeholderImage}
         />
+        
         <Box
-          sx={{
-            position: 'absolute',
-            bottom: 0,
-            left: 0,
-            width: '100%',
-            bgcolor: 'rgba(0, 0, 0, 0.6)',
-            color: 'white',
-            padding: 1
-          }}
+          position="absolute"
+          bottom="0"
+          left="0"
+          width="100%"
+          bg={bgOverlay}
+          color="white"
+          p={2}
         >
-          <Stack direction="row" justifyContent="space-between" alignItems="center">
-            <Typography variant="body2" noWrap>
-              {artist}
-            </Typography>
-            <IconButton 
-              size="small" 
-              onClick={() => onToggleFavorite(song.id)}
-              aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-              sx={{ color: isFavorite ? theme.palette.error.main : 'white' }}
+          <Flex justifyContent="space-between" alignItems="center">
+            <Text 
+              fontSize="sm" 
+              noOfLines={1}
+              width="70%"
             >
-              {isFavorite ? <Favorite /> : <FavoriteBorder />}
-            </IconButton>
-          </Stack>
+              {artist}
+            </Text>
+            <IconButton
+              size="sm"
+              variant="ghost"
+              aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+              icon={isFavorite ? <FaHeart /> : <FaRegHeart />}
+              color={isFavorite ? heartColor : "white"}
+              onClick={() => onToggleFavorite(song.id)}
+            />
+          </Flex>
         </Box>
+        
         <IconButton
           aria-label="Play song"
+          icon={<FaPlay />}
+          position="absolute"
+          top="50%"
+          left="50%"
+          transform="translate(-50%, -50%)"
+          size="lg"
+          colorScheme="blue"
+          opacity="0"
+          _groupHover={{ opacity: 0.9 }}
           onClick={() => onPlay(song)}
-          sx={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            color: 'white',
-            '&:hover': {
-              backgroundColor: theme.palette.primary.main,
-              transform: 'translate(-50%, -50%) scale(1.1)',
-            }
-          }}
-        >
-          <PlayArrow fontSize="large" />
-        </IconButton>
+          borderRadius="full"
+        />
       </Box>
-      <CardContent sx={{ flexGrow: 1 }}>
-        <Typography variant="h6" component="div" noWrap title={title}>
+      
+      <Box p={4} flex="1">
+        <Text 
+          fontWeight="semibold" 
+          fontSize="md" 
+          noOfLines={1} 
+          title={title}
+          mb={2}
+        >
           {title}
-        </Typography>
+        </Text>
+        
         <Link 
           href={postUrl}
-          target="_blank" 
-          rel="noopener noreferrer" 
-          color="inherit"
-          underline="hover"
-          sx={{ display: 'block', mt: 1 }}
+          isExternal
+          color="blue.500"
+          fontSize="sm"
+          display="block"
         >
           {blogName}
         </Link>
-      </CardContent>
-    </Card>
+      </Box>
+    </Box>
   );
 };
 

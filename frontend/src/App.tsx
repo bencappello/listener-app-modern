@@ -9,6 +9,7 @@ import RegisterPage from './pages/Register';
 import ProfilePage from './pages/Profile';
 import SongDetail from './pages/Song/SongDetail';
 import { SearchPage } from './pages/Search';
+import { UserProfile } from './pages/User/UserProfile';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // This is a placeholder for now - we'll build out the actual app later
@@ -37,10 +38,12 @@ const App: React.FC = () => {
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/songs/:id" element={<SongDetail />} />
                 <Route path="/search" element={<SearchPage />} />
+                <Route path="/users/:id" element={<UserProfile />} />
                 
                 {/* Protected routes */}
                 <Route element={<ProtectedRoute />}>
                   <Route path="/profile" element={<ProfilePage />} />
+                  <Route path="/profile/edit" element={<ProfilePage />} />
                   {/* Add more protected routes here */}
                 </Route>
               </Routes>

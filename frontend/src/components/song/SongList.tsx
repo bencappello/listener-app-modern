@@ -1,11 +1,13 @@
 import React from 'react';
-import { 
-  Typography, 
-  Box, 
-  CircularProgress, 
+import {
+  Box,
+  Flex,
+  Text,
+  Grid,
+  Spinner,
   Container,
-  useTheme
-} from '@mui/material';
+  useBreakpointValue
+} from '@chakra-ui/react';
 import { Song } from '../../types/entities';
 import SongCard from './SongCard';
 
@@ -25,78 +27,60 @@ const SongList: React.FC<SongListProps> = ({
   isLoading,
   title
 }) => {
-  const theme = useTheme();
-  
-  // Determine if we're in a test environment
-  const isTestEnv = process.env.NODE_ENV === 'test';
-  
-  // Simple fixed columnSize for tests
-  const getGridSize = () => {
-    if (isTestEnv) return 6; // Always use 2 columns in tests
-    
-    // Check window width for responsive sizing in real browser
-    const width = window.innerWidth;
-    if (width < 600) return 12; // 1 column on mobile
-    if (width < 960) return 6;  // 2 columns on tablet
-    return 3;                  // 4 columns on desktop
-  };
+  // Determine columns based on breakpoint
+  const columns = useBreakpointValue({
+    base: 1,
+    sm: 2,
+    md: 3,
+    lg: 4
+  }) || 1;
 
-  // Render loading state
+  // Handle loading state
   if (isLoading) {
     return (
-      <Box
+      <Flex
         data-testid="song-list-loading"
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '200px',
-          width: '100%'
-        }}
+        direction="column"
+        align="center"
+        justify="center"
+        minH="200px"
+        width="100%"
       >
-        <CircularProgress />
-        <Typography variant="body1" sx={{ mt: 2 }}>
-          Loading songs...
-        </Typography>
-      </Box>
+        <Spinner size="xl" />
+        <Text mt={2}>Loading songs...</Text>
+      </Flex>
     );
   }
 
-  // Render empty state
+  // Handle empty state
   if (!songs.length) {
     return (
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '200px',
-          width: '100%'
-        }}
+      <Flex
+        direction="column"
+        align="center"
+        justify="center"
+        minH="200px"
+        width="100%"
       >
-        <Typography variant="h6">No songs found</Typography>
-      </Box>
+        <Text fontSize="lg" fontWeight="medium">No songs found</Text>
+      </Flex>
     );
   }
 
   return (
-    <Container maxWidth="xl">
+    <Box width="100%">
       {title && (
-        <Typography variant="h5" component="h2" gutterBottom>
+        <Text fontSize="xl" fontWeight="bold" mb={4}>
           {title}
-        </Typography>
+        </Text>
       )}
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', margin: -2 }}>
+      
+      <Grid 
+        templateColumns={`repeat(${columns}, 1fr)`}
+        gap={4}
+      >
         {songs.map((song) => (
-          <Box 
-            key={song.id} 
-            sx={{ 
-              width: { xs: '100%', sm: '50%', md: '33.33%', lg: '25%' }, 
-              padding: 2 
-            }}
-          >
+          <Box key={song.id}>
             <SongCard
               song={song}
               onToggleFavorite={onToggleFavorite}
@@ -104,8 +88,8 @@ const SongList: React.FC<SongListProps> = ({
             />
           </Box>
         ))}
-      </Box>
-    </Container>
+      </Grid>
+    </Box>
   );
 };
 
