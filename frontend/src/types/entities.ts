@@ -20,6 +20,7 @@ export interface Blog {
   imageUrl?: string;
   isActive: boolean;
   lastScraped?: string;
+  isFollowing?: boolean;
 }
 
 export interface Song {
@@ -92,5 +93,7 @@ export interface Pagination {
 
 export interface PaginatedResponse<T> {
   items: T[];
-  pagination: Pagination;
+  totalItems: number;
+  page: number;
+  limit: number;
 } 
