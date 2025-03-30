@@ -8,15 +8,18 @@ const MockChildComponent = () => <div data-testid="mock-child">Child Component</
 
 // Mock the Navbar, Sidebar, and Footer components
 jest.mock('./Navbar', () => ({
-  Navbar: () => <div data-testid="navbar">Navbar Component</div>
+  __esModule: true,
+  default: () => <div data-testid="navbar">Navbar Component</div>
 }));
 
 jest.mock('./Sidebar', () => ({
-  Sidebar: () => <div data-testid="sidebar">Sidebar Component</div>
+  __esModule: true,
+  default: () => <div data-testid="sidebar">Sidebar Component</div>
 }));
 
 jest.mock('./Footer', () => ({
-  Footer: () => <div data-testid="footer">Footer Component</div>
+  __esModule: true,
+  default: () => <div data-testid="footer">Footer Component</div>
 }));
 
 describe('MainLayout', () => {

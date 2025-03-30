@@ -1,7 +1,7 @@
 import React, { ReactNode } from 'react';
-import { Navbar } from './Navbar';
-import { Sidebar } from './Sidebar';
-import { Footer } from './Footer';
+import Navbar from './Navbar';
+import Sidebar from './Sidebar';
+import Footer from './Footer';
 import './Layout.css';
 
 interface MainLayoutProps {
@@ -9,10 +9,7 @@ interface MainLayoutProps {
   hideSidebar?: boolean;
 }
 
-export const MainLayout: React.FC<MainLayoutProps> = ({ 
-  children, 
-  hideSidebar = false 
-}) => {
+const MainLayout: React.FC<MainLayoutProps> = ({ children, hideSidebar = false }) => {
   return (
     <div className="main-layout" data-testid="main-layout">
       <Navbar />
@@ -31,4 +28,6 @@ export const MainLayout: React.FC<MainLayoutProps> = ({
       <Footer />
     </div>
   );
-}; 
+};
+
+export default MainLayout; 

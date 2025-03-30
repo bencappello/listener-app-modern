@@ -26,7 +26,7 @@ const PlaylistIcon = () => (
   </svg>
 );
 
-export const Sidebar: React.FC = () => {
+const Sidebar: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   
@@ -78,4 +78,6 @@ export const Sidebar: React.FC = () => {
       </div>
     </div>
   );
-}; 
+};
+
+export default Sidebar; 
