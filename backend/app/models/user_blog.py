@@ -1,5 +1,5 @@
 from sqlalchemy import Boolean, ForeignKey, DateTime
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import expression
 from datetime import datetime
 
@@ -30,6 +30,10 @@ class UserBlog(Base):
         default=datetime.utcnow,
         nullable=False
     )
+    
+    # Relationships
+    user = relationship("User", back_populates="blog_associations")
+    blog = relationship("Blog", back_populates="user_associations")
     
     def __init__(self, **kwargs):
         """Initialize with default values."""

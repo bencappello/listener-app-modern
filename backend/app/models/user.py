@@ -22,6 +22,9 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean, server_default=expression.true(), nullable=False
     )
+    is_superuser: Mapped[bool] = mapped_column(
+        Boolean, server_default=expression.false(), nullable=False
+    )
     
     # Relationships
     favorites = relationship(
@@ -42,6 +45,18 @@ class User(Base):
         primaryjoin="and_(User.id == UserBlog.user_id, UserBlog.is_following == True)",
         secondaryjoin="UserBlog.blog_id == Blog.id"
     )
+    
+    followed_bands = relationship(
+        "Band",
+        secondary="user_bands",
+        back_populates="followed_by",
+        viewonly=True,
+        primaryjoin="and_(User.id == UserBand.user_id, UserBand.is_following == True)",
+        secondaryjoin="UserBand.band_id == Band.id"
+    )
+    
+    band_associations = relationship("UserBand", back_populates="user")
+    blog_associations = relationship("UserBlog", back_populates="user")
     
     followed_users = relationship(
         "User",

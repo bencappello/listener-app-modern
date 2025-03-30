@@ -13,10 +13,32 @@ from sqlalchemy.pool import NullPool
 from httpx import AsyncClient
 import pytest_asyncio
 from sqlalchemy import event
+from fastapi import HTTPException, status
 
 # Configure SQLAlchemy greenlet_spawn before importing or creating any engines
 # This is needed for SQLAlchemy to correctly handle async operations
 from sqlalchemy.util import greenlet_spawn as sa_greenlet_spawn
+
+# Import all models to ensure they're registered with Base
+from app.models.user import User
+from app.models.band import Band
+from app.models.blog import Blog
+from app.models.tag import Tag
+from app.models.song import Song
+from app.models.user_song import UserSong
+from app.models.user_blog import UserBlog
+from app.models.user_follow import UserFollow
+from app.models.user_band import UserBand
+from app.models.song_tag import SongTag
+from app.models.band_tag import BandTag
+from app.models.blog_tag import BlogTag
+from app.models.comment import Comment
+
+from app.db.base import Base
+from main import app
+from app.api import deps
+from app.core.config import settings
+from app.services.auth import create_access_token
 
 def run_in_greenlet(fn, *args, **kwargs):
     """Run a function in a greenlet"""
@@ -155,11 +177,10 @@ def client(db: Session) -> Generator[TestClient, None, None]:
     def override_get_current_user():
         return user
     
-    # Apply the overrides
+    # Apply the overrides - note we don't override the superuser dependency
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[deps.get_current_user] = override_get_current_user
     app.dependency_overrides[deps.get_current_active_user] = override_get_current_user
-    app.dependency_overrides[deps.get_current_active_superuser] = override_get_current_user
     
     # Create test client
     with TestClient(app) as test_client:
@@ -344,7 +365,7 @@ async def async_auth_headers(async_client: AsyncClient, async_test_db_user: User
 
 # Fixture for authenticated user
 @pytest.fixture(scope="function")
-def authenticated_user(client: TestClient, db: Session) -> Dict[str, Any]:
+def authenticated_user(client: TestClient, db: Session, request: pytest.FixtureRequest) -> Dict[str, Any]:
     # Create a test user and obtain token
     email = "auth_test@example.com"
     username = "auth_test_user"
@@ -363,6 +384,29 @@ def authenticated_user(client: TestClient, db: Session) -> Dict[str, Any]:
     token_data = {"sub": email, "username": username}
     access_token = create_access_token(data=token_data)
     headers = {"Authorization": f"Bearer {access_token}"}
+    
+    # Override the current user dependency
+    def override_get_current_user():
+        return user
+
+    # Override the superuser dependency to return the user if it has is_superuser=True
+    def override_get_current_active_superuser():
+        if hasattr(user, "is_superuser") and user.is_superuser:
+            return user
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not enough permissions"
+        )
+    
+    # Apply the overrides
+    app.dependency_overrides[deps.get_current_user] = override_get_current_user
+    app.dependency_overrides[deps.get_current_active_user] = override_get_current_user
+    app.dependency_overrides[deps.get_current_active_superuser] = override_get_current_active_superuser
+    
+    # Add finalizer to clear overrides
+    def fin():
+        app.dependency_overrides.clear()
+    request.addfinalizer(fin)
     
     return {"user": user, "token": access_token, "headers": headers}
 

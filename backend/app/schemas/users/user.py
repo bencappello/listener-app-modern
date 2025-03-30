@@ -1,36 +1,49 @@
-from typing import Optional
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from typing import Optional, List
+from pydantic import BaseModel, EmailStr, Field
+from datetime import datetime
 
 
 class UserBase(BaseModel):
-    """Base user schema with common attributes."""
-    email: EmailStr
-    username: str
+    """Base schema for User."""
+    email: Optional[EmailStr] = None
+    is_active: Optional[bool] = True
+    is_superuser: bool = False
+    full_name: Optional[str] = None
+    username: Optional[str] = None
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
 
 
 class UserCreate(UserBase):
-    """Schema for user creation with password."""
-    password: str = Field(..., min_length=8)
+    """Schema for creating a new user."""
+    email: EmailStr
+    password: str
+    username: str
 
 
-class UserUpdate(BaseModel):
-    """Schema for user updates."""
-    email: Optional[EmailStr] = None
-    username: Optional[str] = None
-    password: Optional[str] = Field(None, min_length=8)
+class UserUpdate(UserBase):
+    """Schema for updating an existing user."""
+    password: Optional[str] = None
 
 
-class UserInDB(UserBase):
-    """Schema for user in database, including hashed password."""
+class UserInDBBase(UserBase):
+    """Base schema for User from database."""
     id: int
-    is_active: bool = True
+    created_at: datetime
+    updated_at: datetime
     
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        orm_mode = True
 
 
-class User(UserBase):
-    """Schema for user response without password."""
-    id: int
-    is_active: bool = True
+class User(UserInDBBase):
+    """Schema for retrieving a User."""
+    pass
+
+
+class UserInDB(UserInDBBase):
+    """Schema for User with hashed password."""
+    hashed_password: str
     
-    model_config = ConfigDict(from_attributes=True) 
+    class Config:
+        orm_mode = True 

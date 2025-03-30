@@ -4,35 +4,35 @@ from pydantic import BaseModel
 
 
 class TagBase(BaseModel):
-    """Base schema for Tag model."""
+    """Base schema for Tag."""
     name: str
     description: Optional[str] = None
 
 
 class TagCreate(TagBase):
-    """Schema for creating a new Tag."""
+    """Schema for creating a new tag."""
     pass
 
 
-class TagUpdate(TagBase):
-    """Schema for updating an existing Tag."""
+class TagUpdate(BaseModel):
+    """Schema for updating an existing tag."""
     name: Optional[str] = None
     description: Optional[str] = None
 
 
 class TagInDBBase(TagBase):
-    """Base schema for Tag model with DB fields."""
+    """Base schema for Tag from database."""
     id: int
     created_at: datetime
     updated_at: datetime
-
+    
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class Tag(TagInDBBase):
-    """Schema for returning a Tag."""
-    pass
+    """Schema for retrieving a Tag."""
+    count: Optional[int] = 0
 
 
 class TagInDB(TagInDBBase):

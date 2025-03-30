@@ -6,31 +6,32 @@ from pydantic import BaseModel, validator
 class CommentBase(BaseModel):
     """Base schema for Comment model."""
     content: str
+    song_id: Optional[int] = None
+    band_id: Optional[int] = None
+    blog_id: Optional[int] = None
 
 
 class CommentCreate(CommentBase):
     """Schema for creating a new Comment."""
-    song_id: Optional[int] = None
-    band_id: Optional[int] = None
-    blog_id: Optional[int] = None
     
-    @validator('*')
-    def check_target_provided(cls, v, values, **kwargs):
-        """Validate that exactly one target ID is provided."""
-        field = kwargs['field']
-        if field.name.endswith('_id'):
-            # Count how many target IDs are provided
-            target_ids = [
-                'song_id' in values and values['song_id'] is not None,
-                'band_id' in values and values['band_id'] is not None,
-                'blog_id' in values and values['blog_id'] is not None
-            ]
-            
-            if sum(target_ids) == 0 and v is None:
-                raise ValueError("At least one target ID (song_id, band_id, or blog_id) must be provided")
-            elif sum(target_ids) > 1:
-                raise ValueError("Only one target ID (song_id, band_id, or blog_id) can be provided")
+    @validator('song_id', 'band_id', 'blog_id')
+    def check_target_entity(cls, v, values, **kwargs):
+        """Ensure at least one target entity is specified."""
+        field = kwargs.get('field', None)
         
+        # Skip validation if this field is None (not specified)
+        if v is None:
+            return v
+            
+        # Check for multiple entity IDs
+        all_entity_fields = ['song_id', 'band_id', 'blog_id']
+        all_entity_fields.remove(field.name)
+        
+        # Make sure other entity fields aren't specified
+        for other_field in all_entity_fields:
+            if other_field in values and values[other_field] is not None:
+                raise ValueError('A comment can only be associated with one entity: song, band, or blog')
+                
         return v
 
 
@@ -51,7 +52,7 @@ class CommentInDBBase(CommentBase):
     updated_at: datetime
 
     class Config:
-        from_attributes = True
+        orm_mode = True
 
 
 class Comment(CommentInDBBase):

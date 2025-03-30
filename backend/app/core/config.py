@@ -2,8 +2,7 @@ import os
 import secrets
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import validator
-from pydantic import BaseSettings
+from pydantic import validator, BaseSettings
 
 
 class Settings(BaseSettings):

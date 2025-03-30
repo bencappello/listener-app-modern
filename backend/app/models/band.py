@@ -26,4 +26,24 @@ class Band(Base):
         back_populates="bands"
     )
     
-    comments = relationship("Comment", back_populates="band") 
+    comments = relationship("Comment", back_populates="band")
+    
+    # User follow relationships
+    user_associations = relationship("UserBand", back_populates="band")
+    followed_by = relationship(
+        "User",
+        secondary="user_bands",
+        back_populates="followed_bands",
+        viewonly=True,
+        primaryjoin="Band.id == UserBand.band_id",
+        secondaryjoin="and_(UserBand.user_id == User.id, UserBand.is_following == True)"
+    )
+    
+    # Direct access to followers for convenience
+    followers = relationship(
+        "User",
+        secondary="user_bands",
+        backref="followed_bands_direct",
+        primaryjoin="Band.id == UserBand.band_id",
+        secondaryjoin="UserBand.user_id == User.id",
+    ) 

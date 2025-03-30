@@ -10,4 +10,5 @@ from app.models.user_blog import UserBlog  # noqa
 from app.models.user_follow import UserFollow  # noqa
 from app.models.song_tag import SongTag  # noqa
 from app.models.band_tag import BandTag  # noqa
-from app.models.blog_tag import BlogTag  # noqa 
+from app.models.blog_tag import BlogTag  # noqa
+from app.models.user_band import UserBand  # noqa 

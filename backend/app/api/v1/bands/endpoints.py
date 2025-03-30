@@ -45,8 +45,17 @@ async def create_band(
     
     # Create new band
     try:
+        # Debug: print the band_data
+        print(f"Band data: {band_data}")
         # Handle both new and old Pydantic
         band_dict = getattr(band_data, "model_dump", getattr(band_data, "dict", None))()
+        # Filter out fields that don't exist in the Band model
+        band_dict = {
+            "name": band_dict["name"],
+            "description": band_dict["description"],
+            "image_url": band_dict["image_url"]
+        }
+        print(f"Band dict filtered: {band_dict}")
         band = Band(**band_dict)
         db.add(band)
         db.commit()
@@ -59,6 +68,9 @@ async def create_band(
             detail="Band creation failed"
         )
     except Exception as e:
+        import traceback
+        print(f"Error creating band: {str(e)}")
+        print(traceback.format_exc())
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -96,8 +108,17 @@ async def create_band_async(
     
     # Create new band
     try:
+        # Debug: print the band_data
+        print(f"Async band data: {band_data}")
         # Handle both new and old Pydantic
         band_dict = getattr(band_data, "model_dump", getattr(band_data, "dict", None))()
+        # Filter out fields that don't exist in the Band model
+        band_dict = {
+            "name": band_dict["name"],
+            "description": band_dict["description"],
+            "image_url": band_dict["image_url"]
+        }
+        print(f"Async band dict filtered: {band_dict}")
         band = Band(**band_dict)
         db.add(band)
         await db.commit()
@@ -110,6 +131,9 @@ async def create_band_async(
             detail="Band creation failed"
         )
     except Exception as e:
+        import traceback
+        print(f"Error creating async band: {str(e)}")
+        print(traceback.format_exc())
         await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

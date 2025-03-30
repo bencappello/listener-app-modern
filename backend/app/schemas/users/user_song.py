@@ -4,39 +4,36 @@ from datetime import datetime
 
 
 class UserSongBase(BaseModel):
-    """Base schema for User-Song relationship."""
+    """Base schema for UserSong."""
     user_id: int
     song_id: int
+    is_favorite: bool = False
 
 
 class UserSongCreate(UserSongBase):
-    """Schema for creating a user-song relationship."""
-    is_favorite: bool = True
+    """Schema for creating a new UserSong relationship."""
     play_count: int = 0
     last_played: Optional[datetime] = None
 
 
 class UserSongUpdate(BaseModel):
-    """Schema for updating a user-song relationship."""
+    """Schema for updating an existing UserSong relationship."""
     is_favorite: Optional[bool] = None
     play_count: Optional[int] = None
     last_played: Optional[datetime] = None
 
 
-class UserSongInDB(UserSongBase):
-    """Schema for retrieving user-song relationship from database."""
-    is_favorite: bool
-    play_count: int
-    last_played: Optional[datetime] = None
+class UserSongInDBBase(UserSongBase):
+    """Base schema for UserSong from database."""
     created_at: datetime
     updated_at: datetime
-
+    
     class Config:
         orm_mode = True
 
 
-class UserSong(UserSongInDB):
-    """Schema for returning a user-song relationship."""
+class UserSong(UserSongInDBBase):
+    """Schema for retrieving a UserSong."""
     pass
 
 

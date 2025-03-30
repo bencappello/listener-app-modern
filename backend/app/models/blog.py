@@ -26,11 +26,21 @@ class Blog(Base):
     
     # Relationships
     songs = relationship("Song", back_populates="blog")
+    user_associations = relationship("UserBlog", back_populates="blog")
     followed_by = relationship(
         "User",
         secondary="user_blog",
         back_populates="followed_blogs",
         viewonly=True,
+    )
+    
+    # Direct access to followers for convenience 
+    followers = relationship(
+        "User",
+        secondary="user_blog",
+        backref="followed_blogs_direct",
+        primaryjoin="Blog.id == UserBlog.blog_id",
+        secondaryjoin="UserBlog.user_id == User.id",
     )
     
     tags = relationship(
