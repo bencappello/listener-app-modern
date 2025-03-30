@@ -50,6 +50,14 @@ const SongList: React.FC<SongListProps> = ({
   const textColor = useColorModeValue('gray.700', 'gray.200');
   const subTextColor = useColorModeValue('gray.600', 'gray.400');
 
+  const handleFavoriteChange = (songId: string | number) => {
+    if (typeof songId === 'number') {
+      onToggleFavorite(songId);
+    } else if (typeof songId === 'string') {
+      onToggleFavorite(parseInt(songId, 10));
+    }
+  };
+
   // Loading state
   if (isLoading) {
     return (
@@ -192,7 +200,7 @@ const SongList: React.FC<SongListProps> = ({
                 <FavoriteButton
                   songId={song.id}
                   isFavorite={song.isFavorite || false}
-                  onFavoriteChange={(favorite) => onToggleFavorite(song.id)}
+                  onFavoriteChange={() => handleFavoriteChange(song.id)}
                   size="sm"
                 />
               </Td>

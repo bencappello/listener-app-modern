@@ -1,128 +1,193 @@
 import React from 'react';
 import {
   Box,
-  Image,
+  Flex,
   Text,
   Link,
-  Flex,
+  Badge,
   IconButton,
-  useColorModeValue
+  Image,
+  useColorModeValue,
+  Tooltip,
+  Card,
+  CardBody,
+  CardFooter,
+  Heading,
+  Stack,
 } from '@chakra-ui/react';
-import { FaHeart, FaRegHeart, FaPlay } from 'react-icons/fa';
+import { 
+  ExternalLinkIcon, 
+  TimeIcon, 
+  StarIcon, 
+  InfoIcon 
+} from '@chakra-ui/icons';
+import { MdPlayArrow } from 'react-icons/md';
 import { Song } from '../../types/entities';
+import { formatRelativeTime } from '../../utils/formatters';
+import FavoriteButton from './FavoriteButton';
 
 interface SongCardProps {
   song: Song;
-  onToggleFavorite: (songId: number | string) => void;
-  onPlay: (song: Song) => void;
+  onToggleFavorite: (songId: number) => void;
+  onPlay?: (song: Song) => void;
+  showBlogInfo?: boolean;
 }
 
-const SongCard: React.FC<SongCardProps> = ({ song, onToggleFavorite, onPlay }) => {
-  const { title, artist, blogName, imageUrl, postUrl, isFavorite } = song;
-  
-  const placeholderImage = '/assets/images/music-placeholder.jpg';
-  const displayImage = imageUrl && imageUrl.length > 0 ? imageUrl : placeholderImage;
-  
-  const bgOverlay = useColorModeValue('rgba(0, 0, 0, 0.6)', 'rgba(0, 0, 0, 0.7)');
-  const heartColor = useColorModeValue('red.500', 'red.300');
+const SongCard: React.FC<SongCardProps> = ({
+  song,
+  onToggleFavorite,
+  onPlay,
+  showBlogInfo = true,
+}) => {
   const cardBg = useColorModeValue('white', 'gray.700');
-  const cardBorderColor = useColorModeValue('gray.200', 'gray.600');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const textColor = useColorModeValue('gray.700', 'gray.200');
+  const subTextColor = useColorModeValue('gray.600', 'gray.400');
+  const hoverBg = useColorModeValue('gray.50', 'gray.600');
+
+  const imagePlaceholder = 'https://via.placeholder.com/300x200?text=No+Image';
+
+  const handleFavoriteChange = () => {
+    if (typeof song.id === 'number') {
+      onToggleFavorite(song.id);
+    } else if (typeof song.id === 'string') {
+      onToggleFavorite(parseInt(song.id, 10));
+    }
+  };
+
+  const handlePlay = () => {
+    if (onPlay && song.audioUrl) {
+      onPlay(song);
+    }
+  };
 
   return (
-    <Box 
-      borderWidth="1px"
-      borderRadius="lg"
+    <Card 
+      borderWidth="1px" 
+      borderColor={borderColor}
+      borderRadius="lg" 
       overflow="hidden"
       bg={cardBg}
-      borderColor={cardBorderColor}
-      transition="transform 0.2s, box-shadow 0.2s"
-      _hover={{
-        transform: 'translateY(-4px)',
-        boxShadow: 'lg'
-      }}
+      transition="all 0.2s"
+      _hover={{ shadow: 'md', borderColor: 'purple.300' }}
       height="100%"
       display="flex"
       flexDirection="column"
     >
-      <Box position="relative" paddingTop="100%">
+      <Box position="relative">
         <Image
-          position="absolute"
-          top="0"
-          left="0"
+          src={song.imageUrl || imagePlaceholder}
+          alt={song.title}
+          height="160px"
           width="100%"
-          height="100%"
           objectFit="cover"
-          src={displayImage}
-          alt={title}
-          fallbackSrc={placeholderImage}
+          fallbackSrc={imagePlaceholder}
         />
-        
-        <Box
-          position="absolute"
-          bottom="0"
-          left="0"
-          width="100%"
-          bg={bgOverlay}
-          color="white"
-          p={2}
-        >
-          <Flex justifyContent="space-between" alignItems="center">
-            <Text 
-              fontSize="sm" 
-              noOfLines={1}
-              width="70%"
-            >
-              {artist}
-            </Text>
-            <IconButton
-              size="sm"
-              variant="ghost"
-              aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
-              icon={isFavorite ? <FaHeart /> : <FaRegHeart />}
-              color={isFavorite ? heartColor : "white"}
-              onClick={() => onToggleFavorite(song.id)}
-            />
-          </Flex>
-        </Box>
-        
-        <IconButton
-          aria-label="Play song"
-          icon={<FaPlay />}
-          position="absolute"
-          top="50%"
-          left="50%"
-          transform="translate(-50%, -50%)"
-          size="lg"
-          colorScheme="blue"
-          opacity="0"
-          _groupHover={{ opacity: 0.9 }}
-          onClick={() => onPlay(song)}
-          borderRadius="full"
-        />
+        {song.audioUrl && (
+          <IconButton
+            aria-label="Play song"
+            icon={<MdPlayArrow />}
+            position="absolute"
+            bottom="2"
+            right="2"
+            colorScheme="purple"
+            size="sm"
+            isRound
+            onClick={handlePlay}
+          />
+        )}
       </Box>
       
-      <Box p={4} flex="1">
-        <Text 
-          fontWeight="semibold" 
-          fontSize="md" 
-          noOfLines={1} 
-          title={title}
-          mb={2}
-        >
-          {title}
-        </Text>
+      <CardBody py={3} px={4} flex="1">
+        <Stack spacing={1}>
+          <Heading size="sm" noOfLines={1}>
+            <Link 
+              href={song.postUrl}
+              isExternal
+              color={textColor}
+              _hover={{ color: 'purple.500', textDecoration: 'none' }}
+              display="inline-flex"
+              alignItems="center"
+            >
+              {song.title}
+              <ExternalLinkIcon ml={1} boxSize="12px" />
+            </Link>
+          </Heading>
+          
+          <Text fontSize="sm" color={subTextColor} noOfLines={1}>
+            {song.artist}
+          </Text>
+          
+          {showBlogInfo && (
+            <Link
+              href={`/blogs/${song.blogId}`}
+              fontSize="sm"
+              color="purple.500"
+              _hover={{ textDecoration: 'underline' }}
+              fontWeight="medium"
+              noOfLines={1}
+              mt={1}
+            >
+              {song.blogName}
+            </Link>
+          )}
+          
+          <Flex align="center" mt={1}>
+            <TimeIcon boxSize={3} color={subTextColor} mr={1} />
+            <Text fontSize="xs" color={subTextColor}>
+              {formatRelativeTime(new Date(song.postDate))}
+            </Text>
+          </Flex>
+        </Stack>
+      </CardBody>
+      
+      <CardFooter 
+        pt={0} 
+        pb={3} 
+        px={4}
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+        borderTop="none"
+      >
+        <FavoriteButton
+          songId={song.id}
+          isFavorite={song.isFavorite || false}
+          onFavoriteChange={handleFavoriteChange}
+          size="sm"
+        />
         
-        <Link 
-          href={postUrl}
-          isExternal
-          color="blue.500"
-          fontSize="sm"
-          display="block"
-        >
-          {blogName}
-        </Link>
-      </Box>
-    </Box>
+        {song.tags && song.tags.length > 0 && (
+          <Box>
+            {song.tags.slice(0, 1).map((tag) => (
+              <Badge 
+                key={tag} 
+                colorScheme="purple" 
+                variant="subtle" 
+                fontSize="xs"
+              >
+                {tag}
+              </Badge>
+            ))}
+            {song.tags.length > 1 && (
+              <Tooltip 
+                label={song.tags.slice(1).join(', ')} 
+                placement="top"
+              >
+                <Badge 
+                  ml={1} 
+                  colorScheme="gray" 
+                  variant="subtle" 
+                  fontSize="xs"
+                >
+                  +{song.tags.length - 1}
+                </Badge>
+              </Tooltip>
+            )}
+          </Box>
+        )}
+      </CardFooter>
+    </Card>
   );
 };
 
