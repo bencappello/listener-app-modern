@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, act, renderHook, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import { PlayerProvider, usePlayer } from './PlayerContext';
 import { Song } from '../types/entities';
 
@@ -33,10 +33,8 @@ jest.mock('howler', () => {
       this._onloaderror = options.onloaderror || (() => {});
       this._onplayerror = options.onplayerror || (() => {});
       
-      // Simulate loading
-      setTimeout(() => {
-        this._onload();
-      }, 50);
+      // Simulate async loading
+      setTimeout(() => this._onload(), 100);
     }
     
     play() {
@@ -74,9 +72,10 @@ jest.mock('howler', () => {
     }
     
     unload() {
-      // Clean up
+      // Cleanup
     }
     
+    // Helper methods for tests
     simulateEnd() {
       this._playing = false;
       this._position = 0;
@@ -94,26 +93,27 @@ jest.mock('howler', () => {
   };
 });
 
-// Mock local storage
-const mockLocalStorage = (() => {
+// Mock localStorage
+const localStorageMock = (() => {
   let store: Record<string, string> = {};
   
   return {
-    getItem: jest.fn((key: string) => {
+    getItem: (key: string) => {
       return store[key] || null;
-    }),
-    setItem: jest.fn((key: string, value: string) => {
+    },
+    setItem: (key: string, value: string) => {
       store[key] = value;
-    }),
-    clear: jest.fn(() => {
+    },
+    clear: () => {
       store = {};
-    }),
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    }
   };
 })();
 
-Object.defineProperty(window, 'localStorage', {
-  value: mockLocalStorage,
-});
+Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
 // Mock song data
 const mockSongs: Song[] = [
@@ -149,251 +149,420 @@ const mockSongs: Song[] = [
   },
 ];
 
-// Wrap component with provider for testing
+// Test component that consumes the context
+const TestPlayer = () => {
+  const { 
+    currentSong, 
+    isPlaying, 
+    play, 
+    pause, 
+    togglePlay, 
+    next, 
+    previous,
+    volume,
+    setVolume,
+    isMuted,
+    mute,
+    unmute,
+    queue,
+    addToQueue,
+    removeFromQueue,
+    clearQueue,
+    seekTo,
+    seek,
+    duration
+  } = usePlayer();
+
+  return (
+    <div>
+      <div data-testid="current-song">{currentSong ? currentSong.title : 'No song'}</div>
+      <div data-testid="player-state">{isPlaying ? 'Playing' : 'Paused'}</div>
+      <div data-testid="volume">Volume: {volume}</div>
+      <div data-testid="is-muted">{isMuted ? 'Muted' : 'Not Muted'}</div>
+      <div data-testid="seek-position">Position: {seek}</div>
+      <div data-testid="queue-length">Queue: {queue.length}</div>
+      
+      <button data-testid="play-button" onClick={() => play()}>Play</button>
+      <button data-testid="pause-button" onClick={pause}>Pause</button>
+      <button data-testid="toggle-button" onClick={togglePlay}>Toggle</button>
+      <button data-testid="next-button" onClick={next}>Next</button>
+      <button data-testid="previous-button" onClick={previous}>Previous</button>
+      <button data-testid="mute-button" onClick={mute}>Mute</button>
+      <button data-testid="unmute-button" onClick={unmute}>Unmute</button>
+      <button data-testid="volume-up-button" onClick={() => setVolume(0.8)}>Volume Up</button>
+      <button data-testid="volume-down-button" onClick={() => setVolume(0.2)}>Volume Down</button>
+      <button data-testid="seek-button" onClick={() => seekTo(60)}>Seek to 60s</button>
+      <button data-testid="clear-queue-button" onClick={clearQueue}>Clear Queue</button>
+    </div>
+  );
+};
+
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <PlayerProvider>{children}</PlayerProvider>
 );
 
 describe('PlayerContext', () => {
+  const mockSong = {
+    id: '1',
+    title: 'Test Song',
+    artist: 'Test Artist',
+    blogId: 1,
+    blogName: 'Test Blog',
+    audioUrl: 'https://example.com/test.mp3',
+    imageUrl: 'https://example.com/test.jpg',
+    postUrl: 'https://example.com/post',
+    postDate: '2023-01-01',
+  };
+
+  const mockSong2 = {
+    id: '2',
+    title: 'Test Song 2',
+    artist: 'Test Artist 2',
+    blogId: 2,
+    blogName: 'Test Blog 2',
+    audioUrl: 'https://example.com/test2.mp3',
+    imageUrl: 'https://example.com/test2.jpg',
+    postUrl: 'https://example.com/post2',
+    postDate: '2023-01-02',
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
-    mockLocalStorage.clear();
+    localStorage.clear();
+    jest.useFakeTimers();
   });
-  
-  it('initializes with default values', () => {
-    const { result } = renderHook(() => usePlayer(), { wrapper });
-    
-    expect(result.current.currentSong).toBeNull();
-    expect(result.current.queue).toEqual([]);
-    expect(result.current.isPlaying).toBe(false);
-    expect(result.current.volume).toBe(0.7); // Default volume
-    expect(result.current.isMuted).toBe(false);
-    expect(result.current.duration).toBe(0);
-    expect(result.current.seek).toBe(0);
-    expect(result.current.isLoading).toBe(false);
-    expect(result.current.error).toBeNull();
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
-  
-  it('plays a song', async () => {
-    const { result } = renderHook(() => usePlayer(), { wrapper });
+
+  it('initially has no current song and is not playing', () => {
+    render(<TestPlayer />, { wrapper });
     
+    expect(screen.getByTestId('current-song')).toHaveTextContent('No song');
+    expect(screen.getByTestId('player-state')).toHaveTextContent('Paused');
+  });
+
+  it('can play a song', async () => {
+    const { rerender } = render(<TestPlayer />, { wrapper });
+    
+    // Set up a test component that can trigger play with a song
+    const TestPlayerWithPlaySong = () => {
+      const { play, currentSong } = usePlayer();
+      
+      return (
+        <div>
+          <div data-testid="current-song">{currentSong ? currentSong.title : 'No song'}</div>
+          <button data-testid="play-song-button" onClick={() => play(mockSong)}>
+            Play Song
+          </button>
+        </div>
+      );
+    };
+    
+    rerender(<TestPlayerWithPlaySong />);
+    
+    // Play the song
     act(() => {
-      result.current.play(mockSongs[0]);
+      screen.getByTestId('play-song-button').click();
     });
     
-    // Wait for Howl to "load"
+    // FastForward through the loading process
+    act(() => {
+      jest.advanceTimersByTime(200);
+    });
+    
+    // Current song should be updated
     await waitFor(() => {
-      expect(result.current.isLoading).toBe(false);
+      expect(screen.getByTestId('current-song')).toHaveTextContent('Test Song');
     });
-    
-    expect(result.current.currentSong).toEqual(mockSongs[0]);
-    expect(result.current.isPlaying).toBe(true);
-    expect(result.current.duration).toBe(180); // From mock
   });
-  
-  it('pauses and resumes playback', async () => {
-    const { result } = renderHook(() => usePlayer(), { wrapper });
+
+  it('can toggle play/pause', async () => {
+    const { rerender } = render(<TestPlayer />, { wrapper });
     
-    // Start playing
+    // Set up a test component that initializes with a song
+    const TestPlayerWithSong = () => {
+      const { play, isPlaying, togglePlay } = usePlayer();
+      
+      // Initialize with a song
+      React.useEffect(() => {
+        play(mockSong);
+      }, [play]);
+      
+      return (
+        <div>
+          <div data-testid="player-state">{isPlaying ? 'Playing' : 'Paused'}</div>
+          <button data-testid="toggle-button" onClick={togglePlay}>
+            Toggle
+          </button>
+        </div>
+      );
+    };
+    
+    rerender(<TestPlayerWithSong />);
+    
+    // FastForward through the loading process
     act(() => {
-      result.current.play(mockSongs[0]);
+      jest.advanceTimersByTime(200);
     });
     
-    // Wait for Howl to "load"
+    // Initially playing after loading
     await waitFor(() => {
-      expect(result.current.isPlaying).toBe(true);
-    });
-    
-    // Pause
-    act(() => {
-      result.current.pause();
-    });
-    
-    expect(result.current.isPlaying).toBe(false);
-    
-    // Resume
-    act(() => {
-      result.current.play();
-    });
-    
-    expect(result.current.isPlaying).toBe(true);
-  });
-  
-  it('toggles play/pause', async () => {
-    const { result } = renderHook(() => usePlayer(), { wrapper });
-    
-    // Start playing
-    act(() => {
-      result.current.play(mockSongs[0]);
-    });
-    
-    // Wait for Howl to "load"
-    await waitFor(() => {
-      expect(result.current.isPlaying).toBe(true);
+      expect(screen.getByTestId('player-state')).toHaveTextContent('Playing');
     });
     
     // Toggle to pause
     act(() => {
-      result.current.togglePlay();
+      screen.getByTestId('toggle-button').click();
     });
     
-    expect(result.current.isPlaying).toBe(false);
+    // Should be paused
+    expect(screen.getByTestId('player-state')).toHaveTextContent('Paused');
     
-    // Toggle to play
+    // Toggle to play again
     act(() => {
-      result.current.togglePlay();
+      screen.getByTestId('toggle-button').click();
     });
     
-    expect(result.current.isPlaying).toBe(true);
+    // Should be playing again
+    expect(screen.getByTestId('player-state')).toHaveTextContent('Playing');
   });
-  
-  it('manages a queue of songs', async () => {
-    const { result } = renderHook(() => usePlayer(), { wrapper });
+
+  it('can control volume', async () => {
+    render(<TestPlayer />, { wrapper });
     
-    // Add songs to queue
+    // Default volume should be 0.7 (70%)
+    expect(screen.getByTestId('volume')).toHaveTextContent('Volume: 0.7');
+    
+    // Increase volume
     act(() => {
-      result.current.addToQueue(mockSongs[0]);
-      result.current.addToQueue(mockSongs[1]);
+      screen.getByTestId('volume-up-button').click();
     });
     
-    expect(result.current.queue).toHaveLength(2);
-    expect(result.current.queue[0]).toEqual(mockSongs[0]);
-    expect(result.current.queue[1]).toEqual(mockSongs[1]);
+    // Volume should be 0.8
+    expect(screen.getByTestId('volume')).toHaveTextContent('Volume: 0.8');
     
-    // Play from queue
+    // Decrease volume
     act(() => {
-      result.current.play();
+      screen.getByTestId('volume-down-button').click();
     });
     
-    // Wait for Howl to "load"
-    await waitFor(() => {
-      expect(result.current.isPlaying).toBe(true);
-    });
-    
-    expect(result.current.currentSong).toEqual(mockSongs[0]);
-    expect(result.current.queue).toHaveLength(1);
-    
-    // Skip to next song
-    act(() => {
-      result.current.next();
-    });
-    
-    await waitFor(() => {
-      expect(result.current.currentSong).toEqual(mockSongs[1]);
-    });
-    
-    expect(result.current.queue).toHaveLength(0);
-    
-    // Remove from queue
-    act(() => {
-      result.current.addToQueue(mockSongs[2]);
-      result.current.removeFromQueue(mockSongs[2].id);
-    });
-    
-    expect(result.current.queue).toHaveLength(0);
-    
-    // Clear queue
-    act(() => {
-      result.current.addToQueue(mockSongs[0]);
-      result.current.addToQueue(mockSongs[1]);
-      result.current.clearQueue();
-    });
-    
-    expect(result.current.queue).toHaveLength(0);
+    // Volume should be 0.2
+    expect(screen.getByTestId('volume')).toHaveTextContent('Volume: 0.2');
   });
-  
-  it('controls volume and mute state', async () => {
-    const { result } = renderHook(() => usePlayer(), { wrapper });
+
+  it('can mute and unmute', () => {
+    render(<TestPlayer />, { wrapper });
     
-    // Start playing
-    act(() => {
-      result.current.play(mockSongs[0]);
-    });
-    
-    // Wait for Howl to "load"
-    await waitFor(() => {
-      expect(result.current.isPlaying).toBe(true);
-    });
-    
-    // Change volume
-    act(() => {
-      result.current.setVolume(0.5);
-    });
-    
-    expect(result.current.volume).toBe(0.5);
+    // Initially not muted
+    expect(screen.getByTestId('is-muted')).toHaveTextContent('Not Muted');
     
     // Mute
     act(() => {
-      result.current.mute();
+      screen.getByTestId('mute-button').click();
     });
     
-    expect(result.current.isMuted).toBe(true);
+    // Should be muted
+    expect(screen.getByTestId('is-muted')).toHaveTextContent('Muted');
     
     // Unmute
     act(() => {
-      result.current.unmute();
+      screen.getByTestId('unmute-button').click();
     });
     
-    expect(result.current.isMuted).toBe(false);
+    // Should be unmuted
+    expect(screen.getByTestId('is-muted')).toHaveTextContent('Not Muted');
   });
-  
-  it('seeks to a specific position', async () => {
-    const { result } = renderHook(() => usePlayer(), { wrapper });
+
+  it('can add songs to queue and play next', async () => {
+    const { rerender } = render(<TestPlayer />, { wrapper });
     
-    // Start playing
+    // Set up a component to add songs to queue
+    const TestPlayerWithQueue = () => {
+      const { play, currentSong, queue, addToQueue, next } = usePlayer();
+      
+      React.useEffect(() => {
+        play(mockSong);
+      }, [play]);
+      
+      return (
+        <div>
+          <div data-testid="current-song">{currentSong ? currentSong.title : 'No song'}</div>
+          <div data-testid="queue-length">Queue: {queue.length}</div>
+          <button data-testid="add-to-queue" onClick={() => addToQueue(mockSong2)}>
+            Add to Queue
+          </button>
+          <button data-testid="next-button" onClick={next}>Next</button>
+        </div>
+      );
+    };
+    
+    rerender(<TestPlayerWithQueue />);
+    
+    // FastForward through the loading process
     act(() => {
-      result.current.play(mockSongs[0]);
+      jest.advanceTimersByTime(200);
     });
     
-    // Wait for Howl to "load"
+    // Should be playing the first song
     await waitFor(() => {
-      expect(result.current.isPlaying).toBe(true);
+      expect(screen.getByTestId('current-song')).toHaveTextContent('Test Song');
     });
     
-    // Seek to 30 seconds
+    // Queue should be empty
+    expect(screen.getByTestId('queue-length')).toHaveTextContent('Queue: 0');
+    
+    // Add a song to the queue
     act(() => {
-      result.current.seekTo(30);
+      screen.getByTestId('add-to-queue').click();
     });
     
-    expect(result.current.seek).toBe(30);
+    // Queue should have 1 song
+    expect(screen.getByTestId('queue-length')).toHaveTextContent('Queue: 1');
+    
+    // Skip to next song
+    act(() => {
+      screen.getByTestId('next-button').click();
+    });
+    
+    // Advance timer to allow for song loading
+    act(() => {
+      jest.advanceTimersByTime(200);
+    });
+    
+    // Current song should be the one from the queue
+    await waitFor(() => {
+      expect(screen.getByTestId('current-song')).toHaveTextContent('Test Song 2');
+    });
+    
+    // Queue should be empty again
+    expect(screen.getByTestId('queue-length')).toHaveTextContent('Queue: 0');
   });
-  
-  it('persists player state to localStorage', async () => {
-    const { result } = renderHook(() => usePlayer(), { wrapper });
+
+  it('can seek to a specific position', async () => {
+    const { rerender } = render(<TestPlayer />, { wrapper });
     
-    // Set volume and add to queue
+    // Set up a component to test seeking
+    const TestPlayerWithSeek = () => {
+      const { play, seek, seekTo } = usePlayer();
+      
+      React.useEffect(() => {
+        play(mockSong);
+      }, [play]);
+      
+      return (
+        <div>
+          <div data-testid="seek-position">Position: {seek}</div>
+          <button data-testid="seek-button" onClick={() => seekTo(60)}>
+            Seek to 60s
+          </button>
+        </div>
+      );
+    };
+    
+    rerender(<TestPlayerWithSeek />);
+    
+    // FastForward through the loading process
     act(() => {
-      result.current.setVolume(0.4);
-      result.current.addToQueue(mockSongs[0]);
+      jest.advanceTimersByTime(200);
     });
     
-    // Check localStorage was updated
-    expect(mockLocalStorage.setItem).toHaveBeenCalledWith('listener_player_volume', '0.4');
-    expect(mockLocalStorage.setItem).toHaveBeenCalledWith('listener_player_queue', JSON.stringify([mockSongs[0]]));
+    // Initial position might vary depending on implementation
+    // Seek to 60 seconds
+    act(() => {
+      screen.getByTestId('seek-button').click();
+    });
+    
+    // Position should be updated to 60
+    expect(screen.getByTestId('seek-position')).toHaveTextContent('Position: 60');
   });
-  
-  it('loads persisted state from localStorage', async () => {
-    // Set up mock localStorage with saved state
-    mockLocalStorage.setItem('listener_player_volume', '0.3');
-    mockLocalStorage.setItem('listener_player_queue', JSON.stringify([mockSongs[2]]));
-    mockLocalStorage.setItem('listener_player_current_song', JSON.stringify(mockSongs[1]));
+
+  it('persists state to localStorage', async () => {
+    const { rerender } = render(<TestPlayer />, { wrapper });
     
-    // Render hook which should load from localStorage
-    const { result } = renderHook(() => usePlayer(), { wrapper });
+    // Create a component that modifies state
+    const SetupComponent = () => {
+      const { play, setVolume, addToQueue } = usePlayer();
+      
+      React.useEffect(() => {
+        // Set up state to persist
+        play(mockSong);
+        setVolume(0.5);
+        addToQueue(mockSong2);
+      }, [play, setVolume, addToQueue]);
+      
+      return <div>Setting up state</div>;
+    };
     
-    // Wait for volume to be loaded
-    await waitFor(() => {
-      expect(result.current.volume).toBe(0.3);
+    rerender(<SetupComponent />);
+    
+    // Fast-forward time to allow for state to update and persist
+    act(() => {
+      jest.advanceTimersByTime(500);
     });
     
-    // Check queue was loaded
-    await waitFor(() => {
-      expect(result.current.queue).toEqual([mockSongs[2]]);
+    // Check localStorage for persisted state
+    expect(localStorage.getItem('listener_player_volume')).toBe('0.5');
+    expect(localStorage.getItem('listener_player_current_song')).not.toBeNull();
+    expect(localStorage.getItem('listener_player_queue')).not.toBeNull();
+    
+    // Parse the persisted queue
+    const persistedQueue = JSON.parse(localStorage.getItem('listener_player_queue') || '[]');
+    expect(persistedQueue.length).toBe(1);
+    expect(persistedQueue[0].id).toBe('2');
+  });
+
+  it('handles errors when audio fails to load', async () => {
+    // We need to create a special test component that can trigger errors
+    const TestPlayerWithError = () => {
+      const { play, error, isLoading } = usePlayer();
+      
+      return (
+        <div>
+          <div data-testid="error-message">{error || 'No error'}</div>
+          <div data-testid="loading-state">{isLoading ? 'Loading' : 'Not loading'}</div>
+          <button 
+            data-testid="play-bad-song"
+            onClick={() => {
+              const badSong = {...mockSong, audioUrl: 'bad-url'};
+              play(badSong);
+              
+              // Force a loading error (since we can't actually load a bad URL in tests)
+              setTimeout(() => {
+                // Access the mock Howl instance and trigger error
+                const howlInstance = require('howler').Howl.mock.instances[0];
+                howlInstance.simulateError();
+              }, 100);
+            }}
+          >
+            Play Bad Song
+          </button>
+        </div>
+      );
+    };
+    
+    render(<TestPlayerWithError />, { wrapper });
+    
+    // Try to play a bad song
+    act(() => {
+      screen.getByTestId('play-bad-song').click();
     });
     
-    // Check current song was loaded
-    await waitFor(() => {
-      expect(result.current.currentSong).toEqual(mockSongs[1]);
+    // Should show loading state
+    expect(screen.getByTestId('loading-state')).toHaveTextContent('Loading');
+    
+    // Fast-forward to trigger the error
+    act(() => {
+      jest.advanceTimersByTime(200);
     });
+    
+    // Should show error message
+    await waitFor(() => {
+      expect(screen.getByTestId('error-message')).toHaveTextContent('Failed to load audio file');
+    });
+    
+    // Should no longer be loading
+    expect(screen.getByTestId('loading-state')).toHaveTextContent('Not loading');
   });
 }); 

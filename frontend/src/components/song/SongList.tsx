@@ -1,213 +1,204 @@
 import React from 'react';
 import {
+  VStack,
   Box,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
   Text,
-  Link,
   Flex,
-  Badge,
-  IconButton,
+  Select,
+  Input,
+  InputGroup,
+  InputLeftElement,
   Skeleton,
-  SkeletonText,
   useColorModeValue,
-  Image,
-  Tooltip,
 } from '@chakra-ui/react';
-import { 
-  ExternalLinkIcon, 
-  TimeIcon, 
-  StarIcon,
-  InfoIcon,
-} from '@chakra-ui/icons';
-import { MdPlayArrow } from 'react-icons/md';
+import { SearchIcon } from '@chakra-ui/icons';
 import { Song } from '../../types/entities';
-import { formatDate, formatRelativeTime } from '../../utils/formatters';
-import FavoriteButton from './FavoriteButton';
+import SongItem from './SongItem';
 
 interface SongListProps {
   songs: Song[];
   isLoading?: boolean;
-  onToggleFavorite: (songId: number) => void;
-  showBlogInfo?: boolean;
   emptyMessage?: string;
+  showBlogInfo?: boolean;
+  showImages?: boolean;
+  onAddToFavorites?: (songId: number | string) => void;
+  onRemoveFromFavorites?: (songId: number | string) => void;
+  searchEnabled?: boolean;
+  sortEnabled?: boolean;
 }
 
 const SongList: React.FC<SongListProps> = ({
   songs,
   isLoading = false,
-  onToggleFavorite,
+  emptyMessage = 'No songs found',
   showBlogInfo = true,
-  emptyMessage = 'No songs found'
+  showImages = true,
+  onAddToFavorites,
+  onRemoveFromFavorites,
+  searchEnabled = true,
+  sortEnabled = true,
 }) => {
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [sortBy, setSortBy] = React.useState<string>('newest');
+  
   const bgColor = useColorModeValue('white', 'gray.800');
-  const borderColor = useColorModeValue('gray.200', 'gray.600');
-  const hoverBgColor = useColorModeValue('gray.50', 'gray.700');
+  const borderColor = useColorModeValue('gray.200', 'gray.700');
   const textColor = useColorModeValue('gray.700', 'gray.200');
-  const subTextColor = useColorModeValue('gray.600', 'gray.400');
-
-  const handleFavoriteChange = (songId: string | number) => {
-    if (typeof songId === 'number') {
-      onToggleFavorite(songId);
-    } else if (typeof songId === 'string') {
-      onToggleFavorite(parseInt(songId, 10));
+  
+  // Filter songs based on search query
+  const filteredSongs = React.useMemo(() => {
+    if (!searchQuery) return songs;
+    
+    const query = searchQuery.toLowerCase();
+    return songs.filter(song => 
+      song.title.toLowerCase().includes(query) || 
+      song.artist.toLowerCase().includes(query) ||
+      (showBlogInfo && song.blogName.toLowerCase().includes(query))
+    );
+  }, [songs, searchQuery, showBlogInfo]);
+  
+  // Sort songs based on sort selection
+  const sortedSongs = React.useMemo(() => {
+    const songsToSort = [...filteredSongs];
+    
+    switch (sortBy) {
+      case 'title-asc':
+        return songsToSort.sort((a, b) => a.title.localeCompare(b.title));
+      case 'title-desc':
+        return songsToSort.sort((a, b) => b.title.localeCompare(a.title));
+      case 'artist-asc':
+        return songsToSort.sort((a, b) => a.artist.localeCompare(b.artist));
+      case 'artist-desc':
+        return songsToSort.sort((a, b) => b.artist.localeCompare(a.artist));
+      case 'oldest':
+        return songsToSort.sort((a, b) => new Date(a.postDate).getTime() - new Date(b.postDate).getTime());
+      case 'newest':
+      default:
+        return songsToSort.sort((a, b) => new Date(b.postDate).getTime() - new Date(a.postDate).getTime());
     }
+  }, [filteredSongs, sortBy]);
+  
+  // Handle search change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
   };
-
-  // Loading state
+  
+  // Handle sort change
+  const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSortBy(e.target.value);
+  };
+  
+  // Render loading skeletons
   if (isLoading) {
     return (
-      <Box>
-        <SkeletonText mt="4" noOfLines={1} spacing="4" mb={4} />
-        <Table variant="simple">
-          <Thead>
-            <Tr>
-              <Th width="60px"></Th>
-              <Th>Title</Th>
-              {showBlogInfo && <Th>Blog</Th>}
-              <Th width="150px">Date</Th>
-              <Th width="60px"></Th>
-            </Tr>
-          </Thead>
-          <Tbody>
-            {[...Array(5)].map((_, i) => (
-              <Tr key={i}>
-                <Td>
-                  <Skeleton height="40px" width="40px" borderRadius="md" />
-                </Td>
-                <Td>
-                  <SkeletonText noOfLines={2} spacing="2" />
-                </Td>
-                {showBlogInfo && (
-                  <Td>
-                    <SkeletonText noOfLines={1} spacing="2" />
-                  </Td>
-                )}
-                <Td>
-                  <Skeleton height="16px" width="80px" />
-                </Td>
-                <Td>
-                  <Skeleton height="24px" width="24px" borderRadius="full" />
-                </Td>
-              </Tr>
-            ))}
-          </Tbody>
-        </Table>
-      </Box>
-    );
-  }
-
-  // Empty state
-  if (songs.length === 0) {
-    return (
-      <Box textAlign="center" py={10}>
-        <Text fontSize="lg" color={subTextColor}>
-          {emptyMessage}
-        </Text>
-      </Box>
-    );
-  }
-
-  return (
-    <Box>
-      <Table variant="simple">
-        <Thead>
-          <Tr>
-            <Th width="60px"></Th>
-            <Th>Title</Th>
-            {showBlogInfo && <Th>Blog</Th>}
-            <Th width="150px">Date</Th>
-            <Th width="60px"></Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {songs.map((song) => (
-            <Tr 
-              key={song.id}
-              _hover={{ bg: hoverBgColor }}
-              transition="background-color 0.2s"
-            >
-              <Td>
-                {song.audioUrl ? (
-                  <Tooltip label="Play song">
-                    <IconButton
-                      aria-label="Play song"
-                      icon={<MdPlayArrow />}
-                      size="sm"
-                      variant="ghost"
-                      as="a"
-                      href={song.audioUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    />
-                  </Tooltip>
-                ) : (
-                  <Box 
-                    width="32px" 
-                    height="32px" 
-                    borderRadius="md" 
-                    bg="gray.200" 
-                    display="flex" 
-                    alignItems="center" 
-                    justifyContent="center"
-                  >
-                    <InfoIcon color="gray.400" boxSize={4} />
-                  </Box>
-                )}
-              </Td>
-              <Td>
-                <Box>
-                  <Link
-                    href={song.postUrl}
-                    isExternal
-                    color={textColor}
-                    fontWeight="medium"
-                    display="inline-flex"
-                    alignItems="center"
-                  >
-                    {song.title}
-                    <ExternalLinkIcon mx="2px" boxSize={3} />
-                  </Link>
-                  <Text fontSize="sm" color={subTextColor}>
-                    {song.artist}
-                  </Text>
-                </Box>
-              </Td>
-              {showBlogInfo && (
-                <Td>
-                  <Link
-                    href={`/blogs/${song.blogId}`}
-                    color={textColor}
-                    _hover={{ textDecoration: 'underline' }}
-                  >
-                    {song.blogName}
-                  </Link>
-                </Td>
-              )}
-              <Td>
-                <Tooltip label={formatDate(new Date(song.postDate))}>
-                  <Flex align="center" color={subTextColor} fontSize="sm">
-                    <TimeIcon mr={1} boxSize={3} />
-                    {formatRelativeTime(new Date(song.postDate))}
-                  </Flex>
-                </Tooltip>
-              </Td>
-              <Td>
-                <FavoriteButton
-                  songId={song.id}
-                  isFavorite={song.isFavorite || false}
-                  onFavoriteChange={() => handleFavoriteChange(song.id)}
-                  size="sm"
+      <Box data-testid="song-list-loading">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <Box 
+            key={index}
+            p={3}
+            mb={3}
+            borderWidth="1px"
+            borderRadius="md"
+            borderColor={borderColor}
+          >
+            <Flex>
+              {showImages && (
+                <Skeleton 
+                  height="60px" 
+                  width="60px" 
+                  mr={3} 
+                  borderRadius="md" 
                 />
-              </Td>
-            </Tr>
+              )}
+              <Box flex="1">
+                <Skeleton height="20px" mb={2} width="70%" />
+                <Skeleton height="16px" mb={2} width="50%" />
+                {showBlogInfo && <Skeleton height="14px" width="40%" />}
+              </Box>
+              <Skeleton height="30px" width="90px" />
+            </Flex>
+          </Box>
+        ))}
+      </Box>
+    );
+  }
+  
+  return (
+    <Box data-testid="song-list">
+      {/* Search and Sort Controls */}
+      {(searchEnabled || sortEnabled) && (
+        <Flex 
+          mb={4} 
+          direction={{ base: 'column', md: 'row' }} 
+          gap={2}
+        >
+          {searchEnabled && (
+            <InputGroup flex="1">
+              <InputLeftElement pointerEvents="none">
+                <SearchIcon color="gray.300" />
+              </InputLeftElement>
+              <Input
+                value={searchQuery}
+                onChange={handleSearchChange}
+                placeholder="Search songs..."
+                borderColor={borderColor}
+                data-testid="song-search"
+              />
+            </InputGroup>
+          )}
+          
+          {sortEnabled && (
+            <Select
+              value={sortBy}
+              onChange={handleSortChange}
+              width={{ base: '100%', md: '200px' }}
+              borderColor={borderColor}
+              data-testid="song-sort"
+            >
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="title-asc">Title (A-Z)</option>
+              <option value="title-desc">Title (Z-A)</option>
+              <option value="artist-asc">Artist (A-Z)</option>
+              <option value="artist-desc">Artist (Z-A)</option>
+            </Select>
+          )}
+        </Flex>
+      )}
+      
+      {/* Songs List */}
+      {sortedSongs.length > 0 ? (
+        <VStack spacing={3} align="stretch">
+          {sortedSongs.map(song => (
+            <SongItem
+              key={song.id}
+              song={song}
+              showBlog={showBlogInfo}
+              showImage={showImages}
+              onAddToFavorites={onAddToFavorites}
+              onRemoveFromFavorites={onRemoveFromFavorites}
+            />
           ))}
-        </Tbody>
-      </Table>
+        </VStack>
+      ) : (
+        <Box 
+          p={6} 
+          textAlign="center" 
+          borderWidth="1px" 
+          borderRadius="md" 
+          borderColor={borderColor}
+          borderStyle="dashed"
+          bg={bgColor}
+          data-testid="song-list-empty"
+        >
+          <Text color={textColor}>{emptyMessage}</Text>
+          {searchQuery && (
+            <Text fontSize="sm" mt={2} color="gray.500">
+              Try adjusting your search criteria
+            </Text>
+          )}
+        </Box>
+      )}
     </Box>
   );
 };
