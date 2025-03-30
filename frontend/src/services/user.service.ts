@@ -27,7 +27,7 @@ export const getCurrentUser = async (): Promise<User> => {
 export const getUserFavorites = async (
   userId: string | number,
   params?: { page?: number; limit?: number }
-): Promise<{ data: Song[]; total: number; page?: number; limit?: number }> => {
+): Promise<PaginatedResponse<Song>> => {
   const response = await api.get(`${USERS_URL}/${userId}/favorites`, { params });
   return response.data;
 };
@@ -38,7 +38,7 @@ export const getUserFavorites = async (
 export const getUserFollowing = async (
   userId: string | number,
   params?: { page?: number; limit?: number }
-): Promise<{ data: User[]; total: number }> => {
+): Promise<PaginatedResponse<User>> => {
   const response = await api.get(`${USERS_URL}/${userId}/following`, { params });
   return response.data;
 };
@@ -49,7 +49,7 @@ export const getUserFollowing = async (
 export const getUserFollowers = async (
   userId: string | number,
   params?: { page?: number; limit?: number }
-): Promise<{ data: User[]; total: number }> => {
+): Promise<PaginatedResponse<User>> => {
   const response = await api.get(`${USERS_URL}/${userId}/followers`, { params });
   return response.data;
 };
@@ -102,7 +102,7 @@ export const searchUsers = async (
   page: number = 1,
   limit: number = 10
 ): Promise<PaginatedResponse<User>> => {
-  const response = await api.get('/users/search', {
+  const response = await api.get(`${USERS_URL}/search`, {
     params: { q: query, page, limit }
   });
   return response.data;

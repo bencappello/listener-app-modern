@@ -26,6 +26,7 @@ export const UserProfile: React.FC = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [favorites, setFavorites] = useState<Song[]>([]);
+  const [favoritesTotal, setFavoritesTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [favoritesLoading, setFavoritesLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -58,8 +59,9 @@ export const UserProfile: React.FC = () => {
       
       try {
         setFavoritesLoading(true);
-        const { data } = await userService.getUserFavorites(user.id, { limit: 10 });
-        setFavorites(data);
+        const response = await userService.getUserFavorites(user.id, { limit: 10 });
+        setFavorites(response.items);
+        setFavoritesTotal(response.totalItems);
       } catch (err) {
         console.error('Error fetching favorites:', err);
       } finally {
@@ -87,7 +89,7 @@ export const UserProfile: React.FC = () => {
     navigate('/profile/edit');
   };
 
-  const handleToggleFavorite = async (songId: number | string) => {
+  const handleToggleFavorite = async (songId: number) => {
     // Update favorites in UI optimistically
     setFavorites(prevFavorites =>
       prevFavorites.map(song =>
@@ -96,11 +98,6 @@ export const UserProfile: React.FC = () => {
           : song
       )
     );
-  };
-
-  const handlePlaySong = (song: Song) => {
-    console.log('Playing song:', song.title);
-    // This would be implemented with audio player integration
   };
 
   if (loading) {
@@ -195,8 +192,9 @@ export const UserProfile: React.FC = () => {
           <SongList
             songs={favorites}
             onToggleFavorite={handleToggleFavorite}
-            onPlaySong={handlePlaySong}
             isLoading={favoritesLoading}
+            showBlogInfo={true}
+            emptyMessage="No favorite songs yet"
           />
           
           {!favoritesLoading && favorites.length === 0 && (

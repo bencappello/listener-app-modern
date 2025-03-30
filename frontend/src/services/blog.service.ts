@@ -1,6 +1,9 @@
 import api from './api';
 import { Blog, PaginatedResponse } from '../types/entities';
 
+// Base URL for blog endpoints
+const BLOGS_URL = '/blogs';
+
 /**
  * Get a list of all blogs with optional pagination
  * @param page The page number to fetch
@@ -11,7 +14,7 @@ export const getBlogs = async (
   page: number = 1,
   limit: number = 10
 ): Promise<PaginatedResponse<Blog>> => {
-  const response = await api.get('/blogs', {
+  const response = await api.get(BLOGS_URL, {
     params: { page, limit }
   });
   return response.data;
@@ -27,7 +30,7 @@ export const getFollowedBlogs = async (
   page: number = 1,
   limit: number = 10
 ): Promise<PaginatedResponse<Blog>> => {
-  const response = await api.get('/blogs/followed', {
+  const response = await api.get(`${BLOGS_URL}/followed`, {
     params: { page, limit }
   });
   return response.data;
@@ -39,7 +42,7 @@ export const getFollowedBlogs = async (
  * @returns Promise with the blog data
  */
 export const getBlogById = async (id: number): Promise<Blog> => {
-  const response = await api.get(`/blogs/${id}`);
+  const response = await api.get(`${BLOGS_URL}/${id}`);
   return response.data;
 };
 
@@ -49,7 +52,7 @@ export const getBlogById = async (id: number): Promise<Blog> => {
  * @returns Promise with the updated blog data
  */
 export const toggleFollowBlog = async (blogId: number): Promise<Blog> => {
-  const response = await api.post(`/blogs/${blogId}/follow`);
+  const response = await api.post(`${BLOGS_URL}/${blogId}/follow`);
   return response.data;
 };
 
@@ -65,7 +68,7 @@ export const searchBlogs = async (
   page: number = 1,
   limit: number = 10
 ): Promise<PaginatedResponse<Blog>> => {
-  const response = await api.get('/blogs/search', {
+  const response = await api.get(`${BLOGS_URL}/search`, {
     params: { query, page, limit }
   });
   return response.data;
@@ -80,7 +83,7 @@ export const getBlogStats = async (blogId: number): Promise<{
   songCount: number;
   followerCount: number;
 }> => {
-  const response = await api.get(`/blogs/${blogId}/stats`);
+  const response = await api.get(`${BLOGS_URL}/${blogId}/stats`);
   return response.data;
 };
 
@@ -94,7 +97,7 @@ export const getBlogRecentSongs = async (
   blogId: number,
   limit: number = 5
 ): Promise<any[]> => {
-  const response = await api.get(`/blogs/${blogId}/songs/recent`, {
+  const response = await api.get(`${BLOGS_URL}/${blogId}/songs/recent`, {
     params: { limit }
   });
   return response.data;
