@@ -8,6 +8,7 @@ import LoginPage from './pages/Login';
 import RegisterPage from './pages/Register';
 import ProfilePage from './pages/Profile';
 import SongDetail from './pages/Song/SongDetail';
+import { SearchPage } from './pages/Search';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
 // This is a placeholder for now - we'll build out the actual app later
@@ -35,6 +36,7 @@ const App: React.FC = () => {
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/songs/:id" element={<SongDetail />} />
+                <Route path="/search" element={<SearchPage />} />
                 
                 {/* Protected routes */}
                 <Route element={<ProtectedRoute />}>
