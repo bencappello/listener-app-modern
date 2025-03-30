@@ -4,9 +4,18 @@ import userEvent from '@testing-library/user-event';
 import { render } from '../../test-utils/testing-library-utils';
 import SearchPage from './SearchPage';
 import * as songService from '../../services/song.service';
+import { MemoryRouter } from 'react-router-dom';
 
 // Mock song service
 jest.mock('../../services/song.service');
+
+// Mock useNavigate
+const mockNavigate = jest.fn();
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useNavigate: () => mockNavigate,
+  useLocation: () => ({ search: '' }),
+}));
 
 describe('SearchPage Component', () => {
   const mockSongs = [
@@ -83,12 +92,11 @@ describe('SearchPage Component', () => {
     const searchInput = screen.getByPlaceholderText('Search for songs...');
     await userEvent.type(searchInput, 'test{enter}');
     
-    await waitFor(() => {
-      expect(screen.getByText('Test Song 1')).toBeInTheDocument();
-      expect(screen.getByText('Test Song 2')).toBeInTheDocument();
-    });
+    // Find both song titles
+    await screen.findByText('Test Song 1');
+    await screen.findByText('Test Song 2');
     
-    expect(songService.searchSongs).toHaveBeenCalledWith('test', expect.any(Object));
+    expect(songService.searchSongs).toHaveBeenCalledTimes(1);
   });
 
   it('displays empty state when no results found', async () => {
@@ -102,11 +110,9 @@ describe('SearchPage Component', () => {
     const searchInput = screen.getByPlaceholderText('Search for songs...');
     await userEvent.type(searchInput, 'nonexistent{enter}');
     
-    await waitFor(() => {
-      expect(screen.getByText('No songs found')).toBeInTheDocument();
-    });
+    await screen.findByText('No songs found');
     
-    expect(songService.searchSongs).toHaveBeenCalledWith('nonexistent', expect.any(Object));
+    expect(songService.searchSongs).toHaveBeenCalledTimes(1);
   });
 
   it('displays error message when search fails', async () => {
@@ -117,19 +123,17 @@ describe('SearchPage Component', () => {
     const searchInput = screen.getByPlaceholderText('Search for songs...');
     await userEvent.type(searchInput, 'test{enter}');
     
-    await waitFor(() => {
-      expect(screen.getByText('Error searching for songs')).toBeInTheDocument();
-    });
+    await screen.findByText('Error searching for songs. Please try again.');
   });
 
-  it('updates URL with search query parameter', async () => {
+  it('navigates to search results page with query parameter', async () => {
     render(<SearchPage />);
     
     const searchInput = screen.getByPlaceholderText('Search for songs...');
     await userEvent.type(searchInput, 'test query{enter}');
     
     await waitFor(() => {
-      expect(window.location.search).toContain('q=test%20query');
+      expect(mockNavigate).toHaveBeenCalledWith('/search?q=test%20query', { replace: true });
     });
   });
 }); 

@@ -17,7 +17,7 @@ import {
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../../store';
 import { useAuth } from '../../hooks/useAuth';
-import { ChevronDownIcon } from '@chakra-ui/icons';
+import { ChevronDownIcon, SearchIcon } from '@chakra-ui/icons';
 
 const Navbar: React.FC = () => {
   const { isAuthenticated, user } = useAppSelector((state) => state.auth);
@@ -40,6 +40,16 @@ const Navbar: React.FC = () => {
           </Flex>
 
           <Stack direction="row" spacing={4} align="center">
+            <Button
+              as={RouterLink}
+              to="/search"
+              colorScheme="whiteAlpha"
+              variant="ghost"
+              leftIcon={<SearchIcon />}
+            >
+              Search
+            </Button>
+            
             {isAuthenticated ? (
               <Menu>
                 <MenuButton
