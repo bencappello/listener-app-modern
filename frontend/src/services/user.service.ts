@@ -88,4 +88,22 @@ export const changePassword = async (
   }
 ): Promise<void> => {
   await api.post(`${USERS_URL}/change-password`, data);
+};
+
+/**
+ * Search for users by username or email
+ * @param query The search query
+ * @param page The page number (optional, defaults to 1)
+ * @param limit The number of results per page (optional, defaults to 10)
+ * @returns A promise that resolves to the search results
+ */
+export const searchUsers = async (
+  query: string,
+  page: number = 1,
+  limit: number = 10
+): Promise<PaginatedResponse<User>> => {
+  const response = await api.get('/users/search', {
+    params: { q: query, page, limit }
+  });
+  return response.data;
 }; 
