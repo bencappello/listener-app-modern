@@ -2,6 +2,11 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 from datetime import datetime
 
+# Forward reference for Song schema
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from app.schemas.songs.song import Song as SongSchema 
+
 
 class BandBase(BaseModel):
     """Base schema for Band."""
@@ -51,8 +56,8 @@ class BandWithUserDetails(Band):
 
 class BandWithSongs(Band):
     """Schema for band with songs relationship."""
-    # This will be populated when the Song schema is created
-    songs: List = Field(default_factory=list)
+    # Use forward reference for Song schema type hint
+    songs: List["SongSchema"] = Field(default_factory=list)
     
     class Config:
         orm_mode = True 

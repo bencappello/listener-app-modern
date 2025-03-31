@@ -42,7 +42,7 @@ class TestBandModel:
         )
         db_session.add(band2)
         
-        with pytest.raises(Exception):  # SQLite raises different exception than PostgreSQL
+        with pytest.raises(IntegrityError):
             db_session.commit()
             
         db_session.rollback()
@@ -52,7 +52,7 @@ class TestBandModel:
         band = Band(description="Band without a name")
         db_session.add(band)
         
-        with pytest.raises(Exception):
+        with pytest.raises(IntegrityError):
             db_session.commit()
             
         db_session.rollback()

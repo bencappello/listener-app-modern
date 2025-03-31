@@ -235,6 +235,39 @@ async def async_client(async_db: AsyncSession) -> AsyncGenerator[AsyncClient, No
     app.dependency_overrides.clear()
 
 
+# Fixture for superuser authentication headers
+@pytest.fixture(scope="function")
+def superuser_token_headers(client: TestClient, db_session: Session) -> Dict[str, str]:
+    """
+    Fixture to create a superuser and return authentication headers.
+    """
+    # Check if settings has EMAIL_TEST_USER etc., or define defaults
+    superuser_email = getattr(settings, "FIRST_SUPERUSER_EMAIL", "admin@example.com")
+    superuser_username = getattr(settings, "FIRST_SUPERUSER", "admin")
+    superuser_password = getattr(settings, "FIRST_SUPERUSER_PASSWORD", "password")
+    
+    # Create the superuser if not exists
+    user = db_session.query(User).filter(User.email == superuser_email).first()
+    if not user:
+        user = User(
+            email=superuser_email,
+            username=superuser_username,
+            password=superuser_password, # Password will be hashed by User model's __init__
+            is_superuser=True,
+            is_active=True
+        )
+        db_session.add(user)
+        db_session.commit()
+        db_session.refresh(user)
+    
+    # Generate token for the superuser
+    token_data = {"sub": user.email, "username": user.username}
+    access_token = create_access_token(data=token_data)
+    
+    headers = {"Authorization": f"Bearer {access_token}"}
+    return headers
+
+
 # Fixture for test user data
 @pytest.fixture(scope="function")
 def test_user() -> Dict[str, Any]:

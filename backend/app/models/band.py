@@ -1,8 +1,16 @@
 from typing import Optional, List
-from sqlalchemy import String
+from sqlalchemy import String, and_
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
+# Forward references for type hints
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .song import Song
+    from .tag import Tag
+    from .comment import Comment
+    from .user_band import UserBand
+    from .user import User
 
 
 class Band(Base):
@@ -16,21 +24,23 @@ class Band(Base):
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False, index=True)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     image_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    website_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    genre: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     
     # Relationships
-    songs = relationship("Song", back_populates="band")
+    songs: Mapped[List["Song"]] = relationship("Song", back_populates="band")
     
-    tags = relationship(
+    tags: Mapped[List["Tag"]] = relationship(
         "Tag",
         secondary="band_tag",
         back_populates="bands"
     )
     
-    comments = relationship("Comment", back_populates="band")
+    comments: Mapped[List["Comment"]] = relationship("Comment", back_populates="band")
     
     # User follow relationships
-    user_associations = relationship("UserBand", back_populates="band")
-    followed_by = relationship(
+    user_associations: Mapped[List["UserBand"]] = relationship("UserBand", back_populates="band")
+    followed_by: Mapped[List["User"]] = relationship(
         "User",
         secondary="user_bands",
         back_populates="followed_bands",
@@ -40,7 +50,7 @@ class Band(Base):
     )
     
     # Direct access to followers for convenience
-    followers = relationship(
+    followers: Mapped[List["User"]] = relationship(
         "User",
         secondary="user_bands",
         backref="followed_bands_direct",

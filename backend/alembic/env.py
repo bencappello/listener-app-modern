@@ -1,9 +1,13 @@
 import os
 import sys
 from logging.config import fileConfig
+from dotenv import load_dotenv
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Add parent directory to path to import app modules
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -35,6 +39,7 @@ config = context.config
 fileConfig(config.config_file_name)
 
 # Set database URL for migrations
+# Use the DATABASE_URL from environment variables
 DATABASE_URL = os.getenv(
     "DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/listener_db"
 )
