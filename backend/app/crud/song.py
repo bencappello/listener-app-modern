@@ -4,6 +4,7 @@ import sqlalchemy as sa
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import text, func
 from sqlalchemy import select
+from fastapi.encoders import jsonable_encoder
 
 from app.crud.base import CRUDBase
 from app.models.song import Song
@@ -14,6 +15,7 @@ from app.models.tag import Tag
 from app.models.user_band import UserBand
 from app.models.user_blog import UserBlog
 from app.schemas.songs.song import SongCreate, SongUpdate
+from app.crud import tag as crud_tag
 
 
 class CRUDSong(CRUDBase[Song, SongCreate, SongUpdate]):
@@ -364,6 +366,51 @@ class CRUDSong(CRUDBase[Song, SongCreate, SongUpdate]):
 
         result = await db.execute(stmt)
         return result.scalars().all()
+
+    async def create_async(self, db: AsyncSession, *, obj_in: SongCreate) -> Song:
+        """Create a new song, handling tags."""
+        obj_in_data = jsonable_encoder(obj_in, exclude={"tags"})
+        db_obj = self.model(**obj_in_data)
+        
+        if obj_in.tags:
+            tags_to_add = []
+            for tag_name in obj_in.tags:
+                tag = await crud_tag.get_or_create(db, name=tag_name.strip())
+                tags_to_add.append(tag)
+            db_obj.tags = tags_to_add
+
+        db.add(db_obj)
+        await db.commit()
+        await db.refresh(db_obj)
+        return db_obj
+        
+    async def update_async(
+        self,
+        db: AsyncSession,
+        *,
+        db_obj: Song,
+        obj_in: Union[SongUpdate, Dict[str, Any]]
+    ) -> Song:
+        """Update a song, handling tags."""
+        if isinstance(obj_in, dict):
+            update_data = obj_in
+        else:
+            update_data = obj_in.dict(exclude_unset=True)
+        
+        # Handle tags separately if present in update_data
+        if "tags" in update_data:
+            tag_names = update_data.pop("tags")
+            if tag_names is not None: # Allow setting tags to [] or null/None
+                tags_to_set = []
+                for tag_name in tag_names:
+                    tag = await crud_tag.get_or_create(db, name=tag_name.strip())
+                    tags_to_set.append(tag)
+                db_obj.tags = tags_to_set
+            else:
+                 db_obj.tags = [] # Clear tags if None/null is passed
+
+        # Update other fields
+        return await super().update(db, db_obj=db_obj, obj_in=update_data)
 
 
 song = CRUDSong(Song) 

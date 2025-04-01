@@ -1,6 +1,6 @@
 from typing import Optional, List
-from pydantic import BaseModel, Field, validator
-from datetime import datetime
+from pydantic import BaseModel, Field, validator, HttpUrl
+from datetime import datetime, date
 
 
 class SongBase(BaseModel):
@@ -16,6 +16,7 @@ class SongBase(BaseModel):
 class SongCreate(SongBase):
     """Schema for creating a new song."""
     file_path: str = Field(..., description="Path to the song file")
+    tags: Optional[List[str]] = None
 
 
 class SongUpdate(BaseModel):
@@ -25,8 +26,9 @@ class SongUpdate(BaseModel):
     band_id: Optional[int] = None
     blog_id: Optional[int] = None
     file_path: Optional[str] = None
-    cover_image_url: Optional[str] = None
-    release_date: Optional[str] = None
+    cover_image_url: Optional[HttpUrl] = None
+    release_date: Optional[date] = None
+    tags: Optional[List[str]] = None
 
 
 class SongInDBBase(SongBase):
