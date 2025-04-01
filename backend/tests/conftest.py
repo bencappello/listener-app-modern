@@ -162,25 +162,9 @@ def client(db: Session) -> Generator[TestClient, None, None]:
         finally:
             pass
     
-    # Creating a test user for auth
-    user = User(
-        email="test_client_user@example.com",
-        username="test_client_user",
-        password="password123",
-        is_active=True
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    
-    # Create a mock for the current user dependency
-    def override_get_current_user():
-        return user
-    
-    # Apply the overrides - note we don't override the superuser dependency
+    # Apply ONLY the DB override
     app.dependency_overrides[get_db] = override_get_db
-    app.dependency_overrides[deps.get_current_user] = override_get_current_user
-    app.dependency_overrides[deps.get_current_active_user] = override_get_current_user
+    # Removed overrides for get_current_user, get_current_active_user
     
     # Create test client
     with TestClient(app) as test_client:

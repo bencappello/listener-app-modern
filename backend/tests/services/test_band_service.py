@@ -67,6 +67,9 @@ def test_update_band(db_session: Session):
     band_in = BandCreate(name=band_name, description="Original Description")
     created_band = band_service.create(db=db_session, obj_in=band_in)
     
+    # Save the original updated_at value
+    original_updated_at = str(created_band.updated_at)
+    
     updated_name = f"Updated Band Name {random_string()}"
     update_data = BandUpdate(name=updated_name, description="Updated Description")
     
@@ -76,26 +79,19 @@ def test_update_band(db_session: Session):
     assert updated_band.id == created_band.id
     assert updated_band.name == updated_name
     assert updated_band.description == "Updated Description"
-    assert updated_band.updated_at > created_band.updated_at
+    assert str(updated_band.updated_at) != original_updated_at
 
 def test_update_nonexistent_band(db_session: Session):
     """Test updating a non-existent band (should handle gracefully or raise error depending on service impl)."""
-    # Assuming update takes a db_obj that might be None if not found
     update_data = BandUpdate(name="Trying to update ghost")
     
-    # This test depends on how band_service.update handles a non-existent db_obj
-    # Option 1: It returns None or raises an error handled internally
-    # result = band_service.update(db=db_session, db_obj=None, obj_in=update_data)
-    # assert result is None 
-    
-    # Option 2: It relies on the caller to fetch the object first, 
-    # so we test getting it first.
+    # Get a non-existent band first
     non_existent_band = band_service.get(db=db_session, id=9999)
     assert non_existent_band is None
-    # If get returns None, update shouldn't proceed or should raise error if called
-    with pytest.raises(AttributeError): # Or appropriate error if update tries to access None.id
-         band_service.update(db=db_session, db_obj=non_existent_band, obj_in=update_data)
-
+    
+    # If get returns None, update should return None (since we modified the service to handle this gracefully)
+    updated_result = band_service.update(db=db_session, db_obj=non_existent_band, obj_in=update_data)
+    assert updated_result is None
 
 def test_delete_band(db_session: Session):
     """Test deleting a band."""

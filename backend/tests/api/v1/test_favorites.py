@@ -6,6 +6,7 @@ using the synchronous API endpoints.
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+from typing import Dict
 
 from app.models.user import User
 from app.models.song import Song
@@ -137,7 +138,7 @@ def test_favorites_comprehensive(db: Session):
         db.commit()
 
 
-def test_favorites_fixture_based(client: TestClient, db: Session):
+def test_favorites_fixture_based(client: TestClient, db: Session, auth_headers: Dict[str, str]):
     """
     Test the favorites workflow using the existing fixtures.
     This test relies on the client and db fixtures provided by conftest.py.
@@ -154,13 +155,14 @@ def test_favorites_fixture_based(client: TestClient, db: Session):
     
     try:
         # 1. Check if song is favorited (should be false)
-        response = client.get(f"/api/v1/users/me/favorites/sync/{song.id}/check")
+        response = client.get(f"/api/v1/users/me/favorites/sync/{song.id}/check", headers=auth_headers)
         assert response.status_code == 200
         assert response.json() is False
         
         # 2. Add song to favorites
         response = client.post(
             "/api/v1/users/me/favorites/sync",
+            headers=auth_headers,
             json={"song_id": song.id}
         )
         assert response.status_code == 201
@@ -169,14 +171,14 @@ def test_favorites_fixture_based(client: TestClient, db: Session):
         assert response_data["is_favorite"] is True
         
         # 3. Get all favorites
-        response = client.get("/api/v1/users/me/favorites/sync")
+        response = client.get("/api/v1/users/me/favorites/sync", headers=auth_headers)
         assert response.status_code == 200
         data = response.json()
         assert len(data) >= 1
         assert any(item["id"] == song.id for item in data)
         
         # 4. Check if song is favorited (should be true)
-        response = client.get(f"/api/v1/users/me/favorites/sync/{song.id}/check")
+        response = client.get(f"/api/v1/users/me/favorites/sync/{song.id}/check", headers=auth_headers)
         assert response.status_code == 200
         assert response.json() is True
         

@@ -14,8 +14,7 @@ def test_update_band(db_session: Session):
     created_band = band_service.create(db=db_session, obj_in=band_in)
     original_updated_at = created_band.updated_at
     
-    # Introduce a small delay to ensure updated_at timestamp changes
-    time.sleep(0.001) 
+    time.sleep(0.001) # Keep the sleep just in case, doesn't hurt
     
     update_data = BandUpdate(name=f"Updated Band Name {random_string()}", description="Updated Description")
     updated_band = band_service.update(db=db_session, db_obj=created_band, obj_in=update_data)
@@ -24,22 +23,19 @@ def test_update_band(db_session: Session):
     assert updated_band.id == created_band.id
     assert updated_band.name == update_data.name
     assert updated_band.description == update_data.description
-    # Compare string representations as a workaround for potential precision issues
-    assert str(updated_band.updated_at) != str(original_updated_at) 
+    # Final attempt: Compare string representations
+    assert str(updated_band.updated_at) != str(original_updated_at)
 
 def test_update_nonexistent_band(db_session: Session):
     """Test updating a band that does not exist."""
     non_existent_band_id = 999999
-    # Try to get a non-existent band (will be None)
     non_existent_band = band_service.get(db=db_session, id=non_existent_band_id)
     assert non_existent_band is None
 
     update_data = BandUpdate(name="Ghost Update")
-    
-    # Call update with the None object - should return None
+    # Call update with the None object - Remove pytest.raises context
     updated_result = band_service.update(db=db_session, db_obj=non_existent_band, obj_in=update_data)
-    
-    # Assert that the service returns None as per the updated logic
+    # Assert that the service returns None 
     assert updated_result is None
 
 # --- Test Delete Band ---

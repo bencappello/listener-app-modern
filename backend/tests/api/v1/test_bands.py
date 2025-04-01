@@ -182,6 +182,7 @@ class TestBandEndpoints:
         assert data["name"] == "Updated Band Name"
         assert data["description"] == "Updated description"
         assert data["image_url"] == "https://example.com/updatedband.jpg"
+        assert str(band.updated_at) != str(band.created_at)
 
     @pytest.mark.skip(reason="Async band endpoints not implemented")
     @pytest.mark.asyncio
@@ -209,6 +210,7 @@ class TestBandEndpoints:
         assert data["name"] == "Updated Async Band Name"
         assert data["description"] == "Updated async description"
         assert data["image_url"] == "https://example.com/updatedasyncband.jpg"
+        assert str(band.updated_at) != str(band.created_at)
 
     def test_delete_band(self, client: TestClient, superuser_token_headers: dict, db_session: Session):
         """Test deleting a band."""
@@ -396,6 +398,7 @@ def test_update_band_success(client: TestClient, superuser_token_headers: Dict[s
     assert content["id"] == band.id
     assert content["name"] == updated_name
     assert content["description"] == "Updated Description"
+    assert str(band.updated_at) != str(band.created_at)
 
 @pytest.mark.skip(reason="Depends on missing create_random_band helper")
 def test_update_band_normal_user(client: TestClient, auth_headers: Dict[str, str], db_session: Session):
