@@ -20,7 +20,7 @@ async def read_tags(
     """
     Retrieve tags.
     """
-    tags = await crud_tag.get_multi(db, skip=skip, limit=limit)
+    tags = await crud_tag.get_multi_async(db, skip=skip, limit=limit)
     return tags
 
 
@@ -40,7 +40,7 @@ async def create_tag(
     if existing_tag:
         raise HTTPException(status_code=400, detail="Tag with this name already exists")
     
-    tag = await crud_tag.create(db, obj_in=tag_in)
+    tag = await crud_tag.create_async(db, obj_in=tag_in)
     return tag
 
 
@@ -54,7 +54,7 @@ async def read_tag(
     """
     Get tag by ID.
     """
-    tag = await crud_tag.get(db, id=tag_id)
+    tag = await crud_tag.get_async(db, id=tag_id)
     if not tag:
         raise HTTPException(status_code=404, detail="Tag not found")
     return tag
@@ -72,7 +72,7 @@ async def update_tag(
     Update a tag.
     Only superusers can update tags.
     """
-    tag = await crud_tag.get(db, id=tag_id)
+    tag = await crud_tag.get_async(db, id=tag_id)
     if not tag:
         raise HTTPException(status_code=404, detail="Tag not found")
     
@@ -82,7 +82,7 @@ async def update_tag(
         if existing_tag:
             raise HTTPException(status_code=400, detail="Tag with this name already exists")
     
-    tag = await crud_tag.update(db, db_obj=tag, obj_in=tag_in)
+    tag = await crud_tag.update_async(db, db_obj=tag, obj_in=tag_in)
     return tag
 
 
@@ -97,8 +97,8 @@ async def delete_tag(
     Delete a tag.
     Only superusers can delete tags.
     """
-    tag = await crud_tag.get(db, id=tag_id)
+    tag = await crud_tag.get_async(db, id=tag_id)
     if not tag:
         raise HTTPException(status_code=404, detail="Tag not found")
-    tag = await crud_tag.remove(db, id=tag_id)
+    tag = await crud_tag.remove_async(db, id=tag_id)
     return tag 
