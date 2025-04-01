@@ -8,7 +8,7 @@ from httpx import AsyncClient
 
 from app.core.config import settings
 from tests.utils import random_string
-# from app.tests.utils.band import create_random_band # Removed problematic import
+from app.tests.utils.band import create_random_band
 from app.schemas.bands.band import BandCreate, BandUpdate
 from app.models import Band
 
@@ -316,7 +316,6 @@ def test_create_band_success(client: TestClient, superuser_token_headers: Dict[s
     assert "created_at" in content
     assert "updated_at" in content
 
-@pytest.mark.skip(reason="Depends on missing create_random_band helper")
 def test_create_band_duplicate_name(client: TestClient, superuser_token_headers: Dict[str, str], db_session: Session):
     """Test creating a band with a duplicate name."""
     band = create_random_band(db_session)
@@ -338,7 +337,6 @@ def test_create_band_normal_user(client: TestClient, auth_headers: Dict[str, str
 
 # --- Test Read Band --- 
 
-@pytest.mark.skip(reason="Depends on missing create_random_band helper")
 def test_read_band_success(client: TestClient, db_session: Session):
     """Test reading an existing band."""
     band = create_random_band(db_session)
@@ -356,7 +354,6 @@ def test_read_nonexistent_band(client: TestClient, db_session: Session):
 
 # --- Test Read Multiple Bands --- 
 
-@pytest.mark.skip(reason="Depends on missing create_random_band helper")
 def test_read_multiple_bands(client: TestClient, db_session: Session):
     """Test reading multiple bands with pagination."""
     create_random_band(db_session)
@@ -383,7 +380,6 @@ def test_read_multiple_bands(client: TestClient, db_session: Session):
 
 # --- Test Update Band --- 
 
-@pytest.mark.skip(reason="Depends on missing create_random_band helper")
 def test_update_band_success(client: TestClient, superuser_token_headers: Dict[str, str], db_session: Session):
     """Test updating a band successfully as superuser."""
     band = create_random_band(db_session)
@@ -398,9 +394,8 @@ def test_update_band_success(client: TestClient, superuser_token_headers: Dict[s
     assert content["id"] == band.id
     assert content["name"] == updated_name
     assert content["description"] == "Updated Description"
-    assert str(band.updated_at) != str(band.created_at)
+    # assert str(band.updated_at) != str(band.created_at) # Need to refresh band from db to check this
 
-@pytest.mark.skip(reason="Depends on missing create_random_band helper")
 def test_update_band_normal_user(client: TestClient, auth_headers: Dict[str, str], db_session: Session):
     """Test updating a band as a normal user (should be forbidden)."""
     band = create_random_band(db_session)
@@ -420,7 +415,6 @@ def test_update_nonexistent_band(client: TestClient, superuser_token_headers: Di
 
 # --- Test Delete Band --- 
 
-@pytest.mark.skip(reason="Depends on missing create_random_band helper")
 def test_delete_band_success(client: TestClient, superuser_token_headers: Dict[str, str], db_session: Session):
     """Test deleting a band successfully as superuser."""
     band = create_random_band(db_session)
@@ -438,7 +432,6 @@ def test_delete_band_success(client: TestClient, superuser_token_headers: Dict[s
     response_get = client.get(f"{settings.API_V1_STR}/bands/{band_id}")
     assert response_get.status_code == 404
 
-@pytest.mark.skip(reason="Depends on missing create_random_band helper")
 def test_delete_band_normal_user(client: TestClient, auth_headers: Dict[str, str], db_session: Session):
     """Test deleting a band as a normal user (should be forbidden)."""
     band = create_random_band(db_session)

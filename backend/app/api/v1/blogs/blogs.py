@@ -7,8 +7,12 @@ from app.api import dependencies as deps
 from app.crud import blog as crud_blog
 from app.models.user import User
 from app.schemas.blogs.blog import Blog, BlogCreate, BlogUpdate
+from .follows_api import router as follows_router
 
 router = APIRouter()
+
+# Include the follows router
+router.include_router(follows_router, tags=["blog follows"])
 
 
 @router.get("/", response_model=List[Blog])

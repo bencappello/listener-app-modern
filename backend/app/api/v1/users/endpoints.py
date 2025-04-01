@@ -1,14 +1,16 @@
-from typing import Any
+from typing import Any, List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.encoders import jsonable_encoder
 
-from app.api.dependencies import get_current_user, get_current_user_async
-from app.db.session import get_db, get_async_db
+from app.api.dependencies import get_current_user, get_current_user_async, get_async_db
+from app.db.session import get_db
 from app.models.user import User
 from app.schemas.users.user import User as UserSchema
 from app.api.v1.users.favorites import router as favorites_router
+from app.services.follows import get_followed_blogs_async
+from app.schemas.blogs import Blog as BlogSchema
 
 router = APIRouter()
 
@@ -18,6 +20,15 @@ router.include_router(
     prefix="/me/favorites",
     tags=["favorites"]
 )
+
+# Add endpoint for followed blogs
+@router.get("/me/followed-blogs", response_model=List[BlogSchema])
+async def read_followed_blogs(
+    current_user: User = Depends(get_current_user_async),
+    db: AsyncSession = Depends(get_async_db)
+):
+    """Retrieve blogs followed by the current user."""
+    return await get_followed_blogs_async(db=db, user_id=current_user.id)
 
 
 @router.get("/me", response_model=UserSchema)

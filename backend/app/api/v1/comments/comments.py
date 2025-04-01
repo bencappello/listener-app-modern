@@ -5,6 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api import deps
 from app.crud import comment as crud_comment
 from app.crud import blog as crud_blog
+from app.crud import song as crud_song
+from app.crud import band as crud_band
 from app.models.user import User
 from app.schemas.comments.comment import Comment, CommentCreate, CommentUpdate
 
@@ -37,13 +39,31 @@ async def create_comment(
     current_user: User = Depends(deps.get_current_active_user_async),
 ) -> Any:
     """
-    Create new comment.
+    Create new comment on a song, band, or blog.
+    Ensures the target entity exists before creating the comment.
     """
-    # Check if blog exists
-    blog = await crud_blog.get(db, id=comment_in.blog_id)
-    if not blog:
-        raise HTTPException(status_code=404, detail="Blog not found")
+    target_exists = False
+    if comment_in.song_id:
+        target = await crud_song.get_async(db, id=comment_in.song_id)
+        if not target:
+            raise HTTPException(status_code=404, detail=f"Song with id {comment_in.song_id} not found")
+        target_exists = True
+    elif comment_in.band_id:
+        target = await crud_band.get_async(db, id=comment_in.band_id)
+        if not target:
+            raise HTTPException(status_code=404, detail=f"Band with id {comment_in.band_id} not found")
+        target_exists = True
+    elif comment_in.blog_id:
+        target = await crud_blog.get_async(db, id=comment_in.blog_id)
+        if not target:
+            raise HTTPException(status_code=404, detail=f"Blog with id {comment_in.blog_id} not found")
+        target_exists = True
     
+    if not target_exists:
+         # This case should ideally be caught by the Pydantic validator, 
+         # but checking here provides an additional layer.
+        raise HTTPException(status_code=422, detail="Comment must be associated with a song, band, or blog.")
+
     comment = await crud_comment.create_with_owner(
         db=db, obj_in=comment_in, owner_id=current_user.id
     )
