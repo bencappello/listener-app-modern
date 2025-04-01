@@ -10,10 +10,10 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_scoped_session
 from sqlalchemy.pool import NullPool
-from httpx import AsyncClient
+from httpx import AsyncClient, ASGITransport
 import pytest_asyncio
 from sqlalchemy import event
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, FastAPI
 
 # Configure SQLAlchemy greenlet_spawn before importing or creating any engines
 # This is needed for SQLAlchemy to correctly handle async operations
@@ -36,9 +36,9 @@ from app.models.comment import Comment
 
 from app.db.base import Base
 from main import app
-from app.api import deps
+from app.api.dependencies import get_async_db, get_current_active_user
 from app.core.config import settings
-from app.services.auth import create_access_token
+from app.core.security import create_access_token, get_password_hash
 
 def run_in_greenlet(fn, *args, **kwargs):
     """Run a function in a greenlet"""
@@ -103,6 +103,15 @@ def event_loop():
     asyncio.set_event_loop(loop)
     yield loop
     loop.close()
+
+# Fixture for the FastAPI application
+@pytest.fixture(scope="session")
+def app() -> FastAPI:
+    """
+    Create a fresh FastAPI application for testing.
+    """
+    from main import app
+    return app
 
 # Fixture to create and drop test database tables
 @pytest.fixture(scope="function")
@@ -175,53 +184,42 @@ def client(db: Session) -> Generator[TestClient, None, None]:
 
 
 # Fixture for async client with async DB dependency override
-@pytest_asyncio.fixture(scope="function")
-async def async_client(async_db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    # Override the get_async_db dependency
-    async def override_get_async_db():
+@pytest_asyncio.fixture
+async def async_client(app: FastAPI, async_db: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
+    """Create an async test client that uses the test database."""
+    async def get_test_db():
         try:
             yield async_db
         finally:
-            pass
-    
-    # Creating a test user for auth
-    user = User(
-        email="test_async_client_user@example.com",
-        username="test_async_client_user",
-        password="password123",
-        is_active=True
+            await async_db.close()
+
+    test_user = User(
+        email="test@example.com",
+        username="testuser",
+        password="testpassword",
+        is_active=True,
+        is_superuser=True
     )
-    async_db.add(user)
+    async_db.add(test_user)
     await async_db.commit()
-    await async_db.refresh(user)
-    
-    # Override auth dependencies to use our test user
-    async def override_get_current_user_async():
-        return user
-        
-    # Apply the overrides
-    app.dependency_overrides[get_async_db] = override_get_async_db
-    app.dependency_overrides[deps.get_current_user_async] = override_get_current_user_async
-    app.dependency_overrides[deps.get_current_active_user_async] = override_get_current_user_async
-    app.dependency_overrides[deps.get_current_active_superuser_async] = override_get_current_user_async
-    
-    # Create async test client with properly configured transport
-    from httpx import ASGITransport
-    
-    async with AsyncClient(
-        transport=ASGITransport(app=app),
-        base_url="http://test",
-        follow_redirects=True
-    ) as test_client:
-        yield test_client
-    
-    # Clear the override
+    await async_db.refresh(test_user)
+
+    async def get_test_user():
+        return test_user
+
+    app.dependency_overrides[get_async_db] = get_test_db
+    app.dependency_overrides[get_current_active_user] = get_test_user
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        yield ac
+
     app.dependency_overrides.clear()
 
 
 # Fixture for superuser authentication headers
-@pytest.fixture(scope="function")
-def superuser_token_headers(client: TestClient, db_session: Session) -> Dict[str, str]:
+@pytest_asyncio.fixture(scope="function")
+async def superuser_token_headers(async_db: AsyncSession) -> Dict[str, str]:
     """
     Fixture to create a superuser and return authentication headers.
     """
@@ -231,7 +229,10 @@ def superuser_token_headers(client: TestClient, db_session: Session) -> Dict[str
     superuser_password = getattr(settings, "FIRST_SUPERUSER_PASSWORD", "password")
     
     # Create the superuser if not exists
-    user = db_session.query(User).filter(User.email == superuser_email).first()
+    result = await async_db.execute(
+        User.__table__.select().where(User.email == superuser_email)
+    )
+    user = result.scalar_one_or_none()
     if not user:
         user = User(
             email=superuser_email,
@@ -240,9 +241,9 @@ def superuser_token_headers(client: TestClient, db_session: Session) -> Dict[str
             is_superuser=True,
             is_active=True
         )
-        db_session.add(user)
-        db_session.commit()
-        db_session.refresh(user)
+        async_db.add(user)
+        await async_db.commit()
+        await async_db.refresh(user)
     
     # Generate token for the superuser
     token_data = {"sub": user.email, "username": user.username}
@@ -380,34 +381,46 @@ async def async_auth_headers(async_client: AsyncClient, async_test_db_user: User
     return {"Authorization": f"Bearer {access_token}"}
 
 
-# Fixture for authenticated user
-@pytest.fixture(scope="function")
-def authenticated_user(client: TestClient, db: Session, request: pytest.FixtureRequest) -> Dict[str, Any]:
-    # Create a test user and obtain token
-    email = "auth_test@example.com"
-    username = "auth_test_user"
-    password = "password123"
-    
-    user = User(
-        email=email,
-        username=username,
-        password=password,
-        is_active=True
+@pytest_asyncio.fixture(scope="function")
+async def authenticated_user(
+    request: pytest.FixtureRequest,
+    app: FastAPI,
+    async_db: AsyncSession,
+    email: str = "test@example.com",
+    username: str = "testuser",
+    password: str = "testpass",
+    is_superuser: bool = False,
+) -> Dict[str, Any]:
+    """
+    Fixture to create a user and return authentication headers.
+    """
+    # Create the user if not exists
+    result = await async_db.execute(
+        User.__table__.select().where(User.email == email)
     )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    
+    user = result.scalar_one_or_none()
+    if not user:
+        user = User(
+            email=email,
+            username=username,
+            password=password,  # Password will be hashed by User model's __init__
+            is_superuser=is_superuser,
+            is_active=True
+        )
+        async_db.add(user)
+        await async_db.commit()
+        await async_db.refresh(user)
+
     token_data = {"sub": email, "username": username}
     access_token = create_access_token(data=token_data)
     headers = {"Authorization": f"Bearer {access_token}"}
     
     # Override the current user dependency
-    def override_get_current_user():
+    async def override_get_current_user():
         return user
 
     # Override the superuser dependency to return the user if it has is_superuser=True
-    def override_get_current_active_superuser():
+    async def override_get_current_active_superuser():
         if hasattr(user, "is_superuser") and user.is_superuser:
             return user
         raise HTTPException(

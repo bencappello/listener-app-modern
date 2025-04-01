@@ -37,11 +37,11 @@ class Settings(BaseSettings):
     REDIS_DB: int = 0
     
     # JWT
-    JWT_SECRET: str = "jwt_development_secret"
-    JWT_ALGORITHM: str = "HS256"
-    JWT_EXPIRATION: int = 1440  # 24 hours in minutes
+    SECRET_KEY: str = "jwt_development_secret"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours in minutes
     
-    @validator("JWT_EXPIRATION", pre=True)
+    @validator("ACCESS_TOKEN_EXPIRE_MINUTES", pre=True)
     def parse_jwt_expiration(cls, v):
         """Parse JWT expiration from string to int."""
         if isinstance(v, str):

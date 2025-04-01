@@ -8,6 +8,7 @@ class SongBase(BaseModel):
     title: str
     duration: int = Field(..., description="Duration in seconds")
     band_id: Optional[int] = None
+    blog_id: Optional[int] = None
     cover_image_url: Optional[str] = None
     release_date: Optional[str] = None
 
@@ -22,6 +23,7 @@ class SongUpdate(BaseModel):
     title: Optional[str] = None
     duration: Optional[int] = None
     band_id: Optional[int] = None
+    blog_id: Optional[int] = None
     file_path: Optional[str] = None
     cover_image_url: Optional[str] = None
     release_date: Optional[str] = None

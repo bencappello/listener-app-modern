@@ -1,8 +1,9 @@
 from typing import List, Optional, Dict, Any, Union
 from datetime import datetime, timedelta
 import sqlalchemy as sa
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql import text, func
+from sqlalchemy import select
 
 from app.crud.base import CRUDBase
 from app.models.song import Song
@@ -16,9 +17,9 @@ from app.schemas.songs.song import SongCreate, SongUpdate
 
 
 class CRUDSong(CRUDBase[Song, SongCreate, SongUpdate]):
-    def search(
+    async def search(
         self,
-        db: Session,
+        db: AsyncSession,
         *,
         query: str,
         band_id: Optional[int] = None,
@@ -35,7 +36,8 @@ class CRUDSong(CRUDBase[Song, SongCreate, SongUpdate]):
         Search for songs using a text query with optional filters.
         Searches through song titles, band names, blog names, and tags.
         """
-        q = db.query(self.model).distinct()
+        # Build the base query
+        stmt = select(self.model).distinct()
         
         # Base search query across multiple fields
         search_terms = [f"%{term}%" for term in query.split()]
@@ -50,61 +52,62 @@ class CRUDSong(CRUDBase[Song, SongCreate, SongUpdate]):
             ]
             search_conditions.append(sa.or_(*term_conditions))
         
-        q = q.join(Band, Song.band_id == Band.id, isouter=True)
-        q = q.join(Blog, Song.blog_id == Blog.id, isouter=True)
-        q = q.join(Song.tags, isouter=True)
-        q = q.filter(sa.and_(*search_conditions))
+        stmt = stmt.join(Band, Song.band_id == Band.id, isouter=True)
+        stmt = stmt.join(Blog, Song.blog_id == Blog.id, isouter=True)
+        stmt = stmt.join(Song.tags, isouter=True)
+        stmt = stmt.where(sa.and_(*search_conditions))
         
         # Apply filters
         if band_id is not None:
-            q = q.filter(Song.band_id == band_id)
+            stmt = stmt.where(Song.band_id == band_id)
         
         if blog_id is not None:
-            q = q.filter(Song.blog_id == blog_id)
+            stmt = stmt.where(Song.blog_id == blog_id)
         
         if release_year is not None:
-            q = q.filter(func.extract('year', Song.release_date) == release_year)
+            stmt = stmt.where(func.extract('year', Song.release_date) == release_year)
         
         if min_duration is not None:
-            q = q.filter(Song.duration >= min_duration)
+            stmt = stmt.where(Song.duration >= min_duration)
         
         if max_duration is not None:
-            q = q.filter(Song.duration <= max_duration)
+            stmt = stmt.where(Song.duration <= max_duration)
         
         if tag_ids:
             for tag_id in tag_ids:
-                q = q.filter(Song.tags.any(Tag.id == tag_id))
+                stmt = stmt.where(Song.tags.any(Tag.id == tag_id))
         
         # Apply sorting
         if sort_by == "popularity":
             # Count favorites for each song
             subq = (
-                db.query(
+                select(
                     UserSong.song_id, 
                     func.count(UserSong.user_id).label("favorite_count")
                 )
-                .filter(UserSong.is_favorite == True)
+                .where(UserSong.is_favorite == True)
                 .group_by(UserSong.song_id)
                 .subquery()
             )
-            q = q.outerjoin(subq, Song.id == subq.c.song_id)
-            q = q.order_by(sa.desc(sa.func.coalesce(subq.c.favorite_count, 0)))
+            stmt = stmt.outerjoin(subq, Song.id == subq.c.song_id)
+            stmt = stmt.order_by(sa.desc(sa.func.coalesce(subq.c.favorite_count, 0)))
         elif sort_by == "newest":
-            q = q.order_by(sa.desc(Song.release_date))
+            stmt = stmt.order_by(sa.desc(Song.release_date))
         elif sort_by == "oldest":
-            q = q.order_by(Song.release_date)
+            stmt = stmt.order_by(Song.release_date)
         else:
             # Default sorting by relevance (newest first as secondary criteria)
-            q = q.order_by(sa.desc(Song.release_date))
+            stmt = stmt.order_by(sa.desc(Song.release_date))
         
         # Apply pagination
-        q = q.offset(skip).limit(limit)
+        stmt = stmt.offset(skip).limit(limit)
         
-        return q.all()
+        result = await db.execute(stmt)
+        return list(result.scalars().all())  # Convert to list
 
-    def get_popular_songs(
+    async def get_popular_songs(
         self,
-        db: Session,
+        db: AsyncSession,
         *,
         time_period: str = "all_time",
         skip: int = 0,
@@ -126,30 +129,34 @@ class CRUDSong(CRUDBase[Song, SongCreate, SongUpdate]):
             date_threshold = None
         
         # Query to count favorites for each song
-        subq = db.query(
-            UserSong.song_id, 
-            func.count(UserSong.user_id).label("favorite_count")
-        ).filter(UserSong.is_favorite == True)
+        subq = (
+            select(
+                UserSong.song_id, 
+                func.count(UserSong.user_id).label("favorite_count")
+            )
+            .where(UserSong.is_favorite == True)
+        )
         
         # Apply time filter if needed
         if date_threshold:
-            subq = subq.filter(UserSong.created_at >= date_threshold)
+            subq = subq.where(UserSong.created_at >= date_threshold)
         
         subq = subq.group_by(UserSong.song_id).subquery()
         
         # Main query to fetch songs with their favorite counts
-        q = db.query(self.model)
-        q = q.outerjoin(subq, Song.id == subq.c.song_id)
-        q = q.order_by(sa.desc(sa.func.coalesce(subq.c.favorite_count, 0)))
+        stmt = select(self.model)
+        stmt = stmt.outerjoin(subq, Song.id == subq.c.song_id)
+        stmt = stmt.order_by(sa.desc(sa.func.coalesce(subq.c.favorite_count, 0)))
         
         # Apply pagination
-        q = q.offset(skip).limit(limit)
+        stmt = stmt.offset(skip).limit(limit)
         
-        return q.all()
+        result = await db.execute(stmt)
+        return list(result.scalars().all())  # Convert to list
 
-    def get_song_with_details(
+    async def get_song_with_details(
         self,
-        db: Session,
+        db: AsyncSession,
         *,
         id: int,
         user_id: Optional[int] = None
@@ -157,7 +164,9 @@ class CRUDSong(CRUDBase[Song, SongCreate, SongUpdate]):
         """
         Get a song by ID with additional details like band info, user-specific data, etc.
         """
-        song = db.query(self.model).filter(self.model.id == id).first()
+        stmt = select(self.model).where(self.model.id == id)
+        result = await db.execute(stmt)
+        song = result.scalars().first()
         
         if not song:
             return None
@@ -174,11 +183,17 @@ class CRUDSong(CRUDBase[Song, SongCreate, SongUpdate]):
             "release_date": song.release_date,
             "created_at": song.created_at,
             "updated_at": song.updated_at,
+            "band": None,  # Initialize band field
+            "blog": None,  # Initialize blog field
+            "tags": [],    # Initialize tags field
+            "user_data": None # Initialize user_data field
         }
         
         # Add band info if available
         if song.band_id:
-            band = db.query(Band).filter(Band.id == song.band_id).first()
+            band_stmt = select(Band).where(Band.id == song.band_id)
+            band_result = await db.execute(band_stmt)
+            band = band_result.scalars().first()
             if band:
                 song_data["band"] = {
                     "id": band.id,
@@ -187,80 +202,168 @@ class CRUDSong(CRUDBase[Song, SongCreate, SongUpdate]):
         
         # Add blog info if available
         if song.blog_id:
-            blog = db.query(Blog).filter(Blog.id == song.blog_id).first()
+            blog_stmt = select(Blog).where(Blog.id == song.blog_id)
+            blog_result = await db.execute(blog_stmt)
+            blog = blog_result.scalars().first()
             if blog:
                 song_data["blog"] = {
                     "id": blog.id,
                     "name": blog.name,
-                    "url": blog.url,
                 }
         
         # Add tags
-        song_data["tags"] = [{"id": tag.id, "name": tag.name} for tag in song.tags]
-        
+        tag_stmt = select(Tag).join(Song.tags).where(Song.id == id)
+        tag_result = await db.execute(tag_stmt)
+        tags = tag_result.scalars().all()
+        song_data["tags"] = [
+            {"id": tag.id, "name": tag.name} for tag in tags
+        ]
+
         # Add user-specific data if user_id is provided
-        if user_id:
-            user_song = db.query(UserSong).filter(
-                UserSong.user_id == user_id,
-                UserSong.song_id == song.id
-            ).first()
-            
-            song_data["is_favorited"] = bool(user_song and user_song.is_favorite)
-            song_data["play_count"] = getattr(user_song, "play_count", 0) if user_song else 0
-        
-        # Add popularity metrics
-        favorite_count = db.query(func.count(UserSong.user_id)).filter(
-            UserSong.song_id == song.id,
-            UserSong.is_favorite == True
-        ).scalar()
-        
-        song_data["favorite_count"] = favorite_count or 0
-        
+        if user_id is not None:
+            user_song_stmt = select(UserSong).where(
+                UserSong.user_id == user_id, UserSong.song_id == id
+            )
+            user_song_result = await db.execute(user_song_stmt)
+            user_song = user_song_result.scalars().first()
+            if user_song:
+                song_data["user_data"] = {
+                    "is_favorite": user_song.is_favorite,
+                    "last_played_at": user_song.last_played_at,
+                    "play_count": user_song.play_count
+                }
+            else:
+                song_data["user_data"] = {
+                    "is_favorite": False,
+                    "last_played_at": None,
+                    "play_count": 0
+                }
+
         return song_data
 
-    def get_feed_for_user(
+    async def get_feed_for_user(
         self,
-        db: Session,
+        db: AsyncSession,
         *,
         user_id: int,
         skip: int = 0,
         limit: int = 10,
     ) -> List[Song]:
         """
-        Generate a personalized feed of songs for a user based on their followed blogs and bands.
-        Falls back to popular songs if the user doesn't follow any blogs or bands.
+        Get a personalized feed of songs for the user.
+        Prioritizes songs from followed bands and blogs, and then general popular songs.
         """
-        # Get blogs and bands that the user follows
-        followed_blogs = db.query(UserBlog.blog_id).filter(
-            UserBlog.user_id == user_id
-        ).subquery()
+        # Get IDs of bands and blogs followed by the user
+        followed_band_ids_stmt = select(UserBand.band_id).where(UserBand.user_id == user_id)
+        followed_band_ids_result = await db.execute(followed_band_ids_stmt)
+        followed_band_ids = [row[0] for row in followed_band_ids_result.all()]
         
-        followed_bands = db.query(UserBand.band_id).filter(
-            UserBand.user_id == user_id
-        ).subquery()
+        followed_blog_ids_stmt = select(UserBlog.blog_id).where(UserBlog.user_id == user_id)
+        followed_blog_ids_result = await db.execute(followed_blog_ids_stmt)
+        followed_blog_ids = [row[0] for row in followed_blog_ids_result.all()]
         
-        # Query songs from followed blogs and bands
-        q = db.query(self.model).distinct().filter(
+        # Query for songs from followed bands and blogs
+        feed_stmt = select(self.model)
+        feed_stmt = feed_stmt.where(
             sa.or_(
-                Song.blog_id.in_(followed_blogs),
-                Song.band_id.in_(followed_bands)
+                Song.band_id.in_(followed_band_ids),
+                Song.blog_id.in_(followed_blog_ids)
             )
         )
         
-        # Order by newest first
-        q = q.order_by(sa.desc(Song.release_date))
+        # TODO: Add more sophisticated ranking (e.g., recent releases, recommendations)
+        feed_stmt = feed_stmt.order_by(sa.desc(Song.release_date))
         
         # Apply pagination
-        q = q.offset(skip).limit(limit)
+        feed_stmt = feed_stmt.offset(skip).limit(limit)
         
-        # Get results
-        songs = q.all()
-        
-        # If no songs found, fall back to popular songs
-        if not songs:
-            songs = self.get_popular_songs(db, time_period="month", skip=skip, limit=limit)
-        
-        return songs
+        result = await db.execute(feed_stmt)
+        return list(result.scalars().all()) # Convert to list
+
+    async def get_user_favorites(
+        self,
+        db: AsyncSession,
+        *,
+        user_id: int,
+        skip: int = 0,
+        limit: int = 10,
+    ) -> List[Song]:
+        """
+        Get user's favorite songs.
+        """
+        stmt = (
+            select(self.model)
+            .join(UserSong, UserSong.song_id == Song.id)
+            .where(UserSong.user_id == user_id)
+            .where(UserSong.is_favorite == True)
+            .order_by(sa.desc(UserSong.created_at))
+            .offset(skip)
+            .limit(limit)
+        )
+
+        result = await db.execute(stmt)
+        return result.scalars().all()
+
+    async def get_user_recently_played(
+        self,
+        db: AsyncSession,
+        *,
+        user_id: int,
+        skip: int = 0,
+        limit: int = 10,
+    ) -> List[Song]:
+        """
+        Get user's recently played songs.
+        """
+        stmt = (
+            select(self.model)
+            .join(UserSong, UserSong.song_id == Song.id)
+            .where(UserSong.user_id == user_id)
+            .where(UserSong.last_played_at.isnot(None))
+            .order_by(sa.desc(UserSong.last_played_at))
+            .offset(skip)
+            .limit(limit)
+        )
+
+        result = await db.execute(stmt)
+        return result.scalars().all()
+
+    async def get_similar_songs(
+        self,
+        db: AsyncSession,
+        *,
+        song_id: int,
+        limit: int = 10,
+    ) -> List[Song]:
+        """
+        Get similar songs based on shared tags, same band, or same blog.
+        """
+        # Get the source song with its tags
+        source_stmt = select(self.model).where(self.model.id == song_id)
+        source_result = await db.execute(source_stmt)
+        source_song = source_result.scalars().first()
+
+        if not source_song:
+            return []
+
+        # Build query for similar songs
+        stmt = (
+            select(self.model)
+            .distinct()
+            .where(Song.id != song_id)
+            .where(
+                sa.or_(
+                    Song.band_id == source_song.band_id,
+                    Song.blog_id == source_song.blog_id,
+                    Song.tags.any(Tag.id.in_([tag.id for tag in source_song.tags]))
+                )
+            )
+            .order_by(sa.func.random())
+            .limit(limit)
+        )
+
+        result = await db.execute(stmt)
+        return result.scalars().all()
 
 
 song = CRUDSong(Song) 
