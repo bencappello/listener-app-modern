@@ -32,8 +32,8 @@ class UserBlog(Base):
     )
     
     # Relationships
-    user = relationship("User", back_populates="blog_associations")
-    blog = relationship("Blog", back_populates="user_associations")
+    user = relationship("User", back_populates="blog_associations", overlaps="followed_blogs_direct,followers")
+    blog = relationship("Blog", back_populates="user_associations", overlaps="followed_blogs_direct,followers")
     
     def __init__(self, **kwargs):
         """Initialize with default values."""

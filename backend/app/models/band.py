@@ -39,7 +39,7 @@ class Band(Base):
     comments: Mapped[List["Comment"]] = relationship("Comment", back_populates="band")
     
     # User follow relationships
-    user_associations: Mapped[List["UserBand"]] = relationship("UserBand", back_populates="band")
+    user_associations: Mapped[List["UserBand"]] = relationship("UserBand", back_populates="band", overlaps="followed_bands_direct,followers")
     followed_by: Mapped[List["User"]] = relationship(
         "User",
         secondary="user_bands",
@@ -53,7 +53,7 @@ class Band(Base):
     followers: Mapped[List["User"]] = relationship(
         "User",
         secondary="user_bands",
-        backref="followed_bands_direct",
         primaryjoin="Band.id == UserBand.band_id",
         secondaryjoin="UserBand.user_id == User.id",
+        overlaps="band_associations,user_associations"
     ) 

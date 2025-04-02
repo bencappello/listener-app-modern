@@ -1,63 +1,35 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { ChakraProvider, Box, Container, Flex } from '@chakra-ui/react';
-import Navbar from './components/layout/Navbar';
-import Footer from './components/layout/Footer';
-import HomePage from './pages/Home';
-import LoginPage from './pages/Login';
-import RegisterPage from './pages/Register';
-import ProfilePage from './pages/Profile';
-import SongDetail from './pages/Song/SongDetail';
-import { SearchPage } from './pages/Search';
-import { UserProfile } from './pages/User/UserProfile';
-import UserFeed from './pages/User/UserFeed';
-import ProtectedRoute from './components/auth/ProtectedRoute';
+import { useState } from 'react'
+import reactLogo from './assets/react.svg'
+import viteLogo from '/vite.svg'
+import './App.css'
 
-// This is a placeholder for now - we'll build out the actual app later
-const App: React.FC = () => {
+function App() {
+  const [count, setCount] = useState(0)
+
   return (
-    <ChakraProvider>
-      <Router>
-        <Flex 
-          direction="column" 
-          minH="100vh"
-        >
-          {/* Header */}
-          <Navbar />
-          
-          {/* Main content */}
-          <Box 
-            as="main" 
-            flex="1" 
-            py={8}
-            bg="gray.50"
-          >
-            <Container maxW="container.xl">
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/songs/:id" element={<SongDetail />} />
-                <Route path="/search" element={<SearchPage />} />
-                <Route path="/users/:id" element={<UserProfile />} />
-                
-                {/* Protected routes */}
-                <Route element={<ProtectedRoute />}>
-                  <Route path="/profile" element={<ProfilePage />} />
-                  <Route path="/profile/edit" element={<ProfilePage />} />
-                  <Route path="/feed" element={<UserFeed />} />
-                  {/* Add more protected routes here */}
-                </Route>
-              </Routes>
-            </Container>
-          </Box>
-          
-          {/* Footer */}
-          <Footer />
-        </Flex>
-      </Router>
-    </ChakraProvider>
-  );
-};
+    <>
+      <div>
+        <a href="https://vite.dev" target="_blank">
+          <img src={viteLogo} className="logo" alt="Vite logo" />
+        </a>
+        <a href="https://react.dev" target="_blank">
+          <img src={reactLogo} className="logo react" alt="React logo" />
+        </a>
+      </div>
+      <h1>Vite + React</h1>
+      <div className="card">
+        <button onClick={() => setCount((count) => count + 1)}>
+          count is {count}
+        </button>
+        <p>
+          Edit <code>src/App.tsx</code> and save to test HMR
+        </p>
+      </div>
+      <p className="read-the-docs">
+        Click on the Vite and React logos to learn more
+      </p>
+    </>
+  )
+}
 
-export default App; 
+export default App

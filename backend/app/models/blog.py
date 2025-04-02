@@ -26,7 +26,7 @@ class Blog(Base):
     
     # Relationships
     songs = relationship("Song", back_populates="blog")
-    user_associations = relationship("UserBlog", back_populates="blog")
+    user_associations = relationship("UserBlog", back_populates="blog", overlaps="followed_blogs_direct,followers")
     followed_by = relationship(
         "User",
         secondary="user_blog",
@@ -38,9 +38,9 @@ class Blog(Base):
     followers = relationship(
         "User",
         secondary="user_blog",
-        backref="followed_blogs_direct",
         primaryjoin="Blog.id == UserBlog.blog_id",
         secondaryjoin="UserBlog.user_id == User.id",
+        overlaps="blog_associations,user_associations"
     )
     
     tags = relationship(

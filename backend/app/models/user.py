@@ -46,6 +46,13 @@ class User(Base):
         secondaryjoin="UserBlog.blog_id == Blog.id"
     )
     
+    # Explicitly named relationship for direct access via secondary table if needed
+    followed_blogs_direct = relationship(
+        "UserBlog",
+        primaryjoin="User.id == UserBlog.user_id",
+        overlaps="blog_associations,followers"
+    )
+    
     followed_bands = relationship(
         "Band",
         secondary="user_bands",
@@ -53,6 +60,13 @@ class User(Base):
         viewonly=True,
         primaryjoin="and_(User.id == UserBand.user_id, UserBand.is_following == True)",
         secondaryjoin="UserBand.band_id == Band.id"
+    )
+    
+    # Explicitly named relationship for direct access via secondary table if needed
+    followed_bands_direct = relationship(
+        "UserBand",
+        primaryjoin="User.id == UserBand.user_id",
+        overlaps="band_associations,followers"
     )
     
     band_associations = relationship("UserBand", back_populates="user")

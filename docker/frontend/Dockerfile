@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -12,5 +12,5 @@ COPY frontend/ .
 # Expose port
 EXPOSE 3000
 
-# Command to run the application
-CMD ["npm", "start"] 
+# Command to run the application in development mode
+CMD ["npm", "run", "dev"] 

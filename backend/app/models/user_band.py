@@ -32,5 +32,5 @@ class UserBand(Base):
     )
     
     # Relationships
-    user = relationship("User", back_populates="band_associations")
-    band = relationship("Band", back_populates="user_associations") 
+    user = relationship("User", back_populates="band_associations", overlaps="followed_bands_direct,followers")
+    band = relationship("Band", back_populates="user_associations", overlaps="followed_bands_direct,followers") 
