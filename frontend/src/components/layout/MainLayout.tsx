@@ -1,31 +1,25 @@
-import React, { ReactNode } from 'react';
-import Navbar from './Navbar';
-import Sidebar from './Sidebar';
-import Footer from './Footer';
-import './Layout.css';
+import React from 'react';
+import { Outlet } from 'react-router-dom';
+// We'll add imports for Header, Footer, Sidebar later
 
-interface MainLayoutProps {
-  children: ReactNode;
-  hideSidebar?: boolean;
-}
-
-const MainLayout: React.FC<MainLayoutProps> = ({ children, hideSidebar = false }) => {
+const MainLayout: React.FC = () => {
   return (
-    <div className="main-layout" data-testid="main-layout">
-      <Navbar />
-      
-      <div className="layout-container">
-        {!hideSidebar && <Sidebar />}
+    <div className="app-layout">
+      {/* Header Component will go here */}
+      <header>Header Placeholder</header>
+
+      <div className="main-content">
+        {/* Sidebar Component might go here or be part of main */}
+        <aside>Sidebar Placeholder</aside>
         
-        <div 
-          className={`content-container ${hideSidebar ? 'content-container-full' : ''}`}
-          data-testid="content-container"
-        >
-          {children}
-        </div>
+        <main>
+          {/* Child route content will be rendered here */}
+          <Outlet />
+        </main>
       </div>
-      
-      <Footer />
+
+      {/* Footer Component will go here */}
+      <footer>Footer Placeholder</footer>
     </div>
   );
 };
