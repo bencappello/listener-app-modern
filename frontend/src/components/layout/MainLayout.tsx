@@ -1,12 +1,14 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
-// We'll add imports for Header, Footer, Sidebar later
+// Import the actual Header component
+import Header from './Header';
+// We'll add imports for Footer, Sidebar later
 
 const MainLayout: React.FC = () => {
   return (
     <div className="app-layout">
-      {/* Header Component will go here */}
-      <header>Header Placeholder</header>
+      {/* Use the Header component */}
+      <Header />
 
       <div className="main-content">
         {/* Sidebar Component might go here or be part of main */}
