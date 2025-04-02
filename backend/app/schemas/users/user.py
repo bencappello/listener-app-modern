@@ -27,13 +27,16 @@ class UserUpdate(UserBase):
 
 
 class UserInDBBase(UserBase):
-    """Base schema for User from database."""
+    """Base schema for User model with DB fields."""
     id: int
+    is_active: bool = True
+    is_superuser: bool = False
     created_at: datetime
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        # orm_mode = True
+        from_attributes = True # Pydantic V2
 
 
 class User(UserInDBBase):

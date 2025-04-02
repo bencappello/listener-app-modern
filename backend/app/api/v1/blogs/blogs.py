@@ -26,7 +26,7 @@ async def read_blogs(
     Retrieve blogs.
     """
     blogs = await crud_blog.get_multi_async(db, skip=skip, limit=limit)
-    return [Blog.parse_obj(jsonable_encoder(blog)) for blog in blogs]
+    return [Blog.model_validate(jsonable_encoder(blog)) for blog in blogs]
 
 
 @router.post("/", response_model=Blog)
@@ -41,7 +41,7 @@ async def create_blog(
     Only superusers can create blogs.
     """
     blog = await crud_blog.create_async(db, obj_in=blog_in)
-    return Blog.parse_obj(jsonable_encoder(blog))
+    return Blog.model_validate(jsonable_encoder(blog))
 
 
 @router.get("/active", response_model=List[Blog])
@@ -55,7 +55,7 @@ async def read_active_blogs(
     Retrieve active blogs.
     """
     blogs = await crud_blog.get_active_blogs(db, skip=skip, limit=limit)
-    return [Blog.parse_obj(jsonable_encoder(blog)) for blog in blogs]
+    return [Blog.model_validate(jsonable_encoder(blog)) for blog in blogs]
 
 
 @router.get("/{blog_id}", response_model=Blog)
@@ -71,7 +71,7 @@ async def read_blog(
     blog = await crud_blog.get_async(db, id=blog_id)
     if not blog:
         raise HTTPException(status_code=404, detail="Blog not found")
-    return Blog.parse_obj(jsonable_encoder(blog))
+    return Blog.model_validate(jsonable_encoder(blog))
 
 
 @router.put("/{blog_id}", response_model=Blog)
@@ -90,7 +90,7 @@ async def update_blog(
     if not blog:
         raise HTTPException(status_code=404, detail="Blog not found")
     blog = await crud_blog.update_async(db, db_obj=blog, obj_in=blog_in)
-    return Blog.parse_obj(jsonable_encoder(blog))
+    return Blog.model_validate(jsonable_encoder(blog))
 
 
 @router.delete("/{blog_id}", response_model=Blog)
@@ -108,4 +108,4 @@ async def delete_blog(
     if not blog:
         raise HTTPException(status_code=404, detail="Blog not found")
     blog = await crud_blog.remove_async(db, id=blog_id)
-    return Blog.parse_obj(jsonable_encoder(blog)) 
+    return Blog.model_validate(jsonable_encoder(blog)) 

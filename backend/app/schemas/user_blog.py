@@ -1,16 +1,15 @@
 from pydantic import BaseModel
 from datetime import datetime
 
-class UserFollowBase(BaseModel):
-    follower_id: int
-    followed_id: int
+class UserBlogBase(BaseModel):
+    user_id: int
+    blog_id: int
     is_following: bool = True
 
-class UserFollowCreate(UserFollowBase):
-    # No extra fields needed for creation beyond base
+class UserBlogCreate(UserBlogBase):
     pass
 
-class UserFollow(UserFollowBase):
+class UserBlog(UserBlogBase):
     followed_at: datetime
 
     class Config:

@@ -1,0 +1,154 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.10.14, pytest-8.3.5, pluggy-1.5.0
+rootdir: /Users/Ben/engineering_projects/listener-app-modern/new-listener-app
+plugins: Faker-37.1.0, anyio-4.4.0, cov-6.1.0, asyncio-0.26.0, mock-3.14.0
+asyncio: mode=strict, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 125 items / 10 errors
+
+==================================== ERRORS ====================================
+_____________ ERROR collecting backend/tests/api/v1/test_bands.py ______________
+ImportError while importing test module '/Users/Ben/engineering_projects/listener-app-modern/new-listener-app/backend/tests/api/v1/test_bands.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniforge3/envs/macos_m2/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+backend/tests/api/v1/test_bands.py:11: in <module>
+    from app.tests.utils.band import create_random_band
+E   ModuleNotFoundError: No module named 'app.tests'
+____________ ERROR collecting backend/tests/api/v1/test_comments.py ____________
+ImportError while importing test module '/Users/Ben/engineering_projects/listener-app-modern/new-listener-app/backend/tests/api/v1/test_comments.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniforge3/envs/macos_m2/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+backend/tests/api/v1/test_comments.py:7: in <module>
+    from app.tests.utils.user import create_random_user
+E   ModuleNotFoundError: No module named 'app.tests'
+____________ ERROR collecting backend/tests/api/v1/test_follows.py _____________
+ImportError while importing test module '/Users/Ben/engineering_projects/listener-app-modern/new-listener-app/backend/tests/api/v1/test_follows.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniforge3/envs/macos_m2/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+backend/tests/api/v1/test_follows.py:7: in <module>
+    from app.tests.utils.user import create_random_user
+E   ModuleNotFoundError: No module named 'app.tests'
+_________ ERROR collecting backend/tests/api/v1/test_song_endpoints.py _________
+ImportError while importing test module '/Users/Ben/engineering_projects/listener-app-modern/new-listener-app/backend/tests/api/v1/test_song_endpoints.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniforge3/envs/macos_m2/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+backend/tests/api/v1/test_song_endpoints.py:5: in <module>
+    from sqlalchemy import select, selectinload
+E   ImportError: cannot import name 'selectinload' from 'sqlalchemy' (/Users/Ben/miniforge3/envs/macos_m2/lib/python3.10/site-packages/sqlalchemy/__init__.py)
+____________ ERROR collecting backend/tests/crud/test_band_crud.py _____________
+ImportError while importing test module '/Users/Ben/engineering_projects/listener-app-modern/new-listener-app/backend/tests/crud/test_band_crud.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniforge3/envs/macos_m2/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+backend/tests/crud/test_band_crud.py:7: in <module>
+    from app.tests.utils.band import create_random_band
+E   ModuleNotFoundError: No module named 'app.tests'
+____________ ERROR collecting backend/tests/crud/test_blog_crud.py _____________
+ImportError while importing test module '/Users/Ben/engineering_projects/listener-app-modern/new-listener-app/backend/tests/crud/test_blog_crud.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniforge3/envs/macos_m2/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+backend/tests/crud/test_blog_crud.py:4: in <module>
+    from app.crud.crud_blog import crud_blog
+E   ModuleNotFoundError: No module named 'app.crud.crud_blog'
+____________ ERROR collecting backend/tests/models/test_comment.py _____________
+ImportError while importing test module '/Users/Ben/engineering_projects/listener-app-modern/new-listener-app/backend/tests/models/test_comment.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniforge3/envs/macos_m2/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+backend/tests/models/test_comment.py:6: in <module>
+    from app.tests.utils.user import create_random_user
+E   ModuleNotFoundError: No module named 'app.tests'
+_____ ERROR collecting backend/tests/models/test_user_blog_relationship.py _____
+ImportError while importing test module '/Users/Ben/engineering_projects/listener-app-modern/new-listener-app/backend/tests/models/test_user_blog_relationship.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniforge3/envs/macos_m2/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+backend/tests/models/test_user_blog_relationship.py:7: in <module>
+    from app.tests.utils.user import create_random_user
+E   ModuleNotFoundError: No module named 'app.tests'
+____ ERROR collecting backend/tests/models/test_user_follow_relationship.py ____
+ImportError while importing test module '/Users/Ben/engineering_projects/listener-app-modern/new-listener-app/backend/tests/models/test_user_follow_relationship.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../miniforge3/envs/macos_m2/lib/python3.10/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+backend/tests/models/test_user_follow_relationship.py:7: in <module>
+    from app.tests.utils.user import create_random_user
+E   ModuleNotFoundError: No module named 'app.tests'
+_____________ ERROR collecting tests/api/v1/test_tag_endpoints.py ______________
+import file mismatch:
+imported module 'test_tag_endpoints' has this __file__ attribute:
+  /Users/Ben/engineering_projects/listener-app-modern/new-listener-app/backend/tests/api/v1/test_tag_endpoints.py
+which is not the same as the test file we want to collect:
+  /Users/Ben/engineering_projects/listener-app-modern/new-listener-app/tests/api/v1/test_tag_endpoints.py
+HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
+=============================== warnings summary ===============================
+backend/app/db/base.py:9
+  /Users/Ben/engineering_projects/listener-app-modern/new-listener-app/backend/app/db/base.py:9: MovedIn20Warning: The ``as_declarative()`` function is now available as sqlalchemy.orm.as_declarative() (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    @as_declarative()
+
+../../../miniforge3/envs/macos_m2/lib/python3.10/site-packages/pydantic/_internal/_config.py:323: 14 warnings
+  /Users/Ben/miniforge3/envs/macos_m2/lib/python3.10/site-packages/pydantic/_internal/_config.py:323: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.11/migration/
+    warnings.warn(DEPRECATION_MESSAGE, DeprecationWarning)
+
+../../../miniforge3/envs/macos_m2/lib/python3.10/site-packages/pydantic/_internal/_config.py:373
+  /Users/Ben/miniforge3/envs/macos_m2/lib/python3.10/site-packages/pydantic/_internal/_config.py:373: UserWarning: Valid config keys have changed in V2:
+  * 'orm_mode' has been renamed to 'from_attributes'
+    warnings.warn(message, UserWarning)
+
+backend/app/api/v1/comments/comments.py:77
+  /Users/Ben/engineering_projects/listener-app-modern/new-listener-app/backend/app/api/v1/comments/comments.py:77: DeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+    target_type: str = Path(..., title="The target type", regex="^(song|band|blog)$"),
+
+backend/app/api/v1/songs/endpoints.py:68
+  /Users/Ben/engineering_projects/listener-app-modern/new-listener-app/backend/app/api/v1/songs/endpoints.py:68: DeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+    sort_by: Optional[str] = Query(None, regex="^(popularity|newest|oldest)$"),
+
+backend/app/api/v1/songs/endpoints.py:96
+  /Users/Ben/engineering_projects/listener-app-modern/new-listener-app/backend/app/api/v1/songs/endpoints.py:96: DeprecationWarning: `regex` has been deprecated, please use `pattern` instead
+    time_period: str = Query("all_time", regex="^(week|month|year|all_time)$"),
+
+backend/tests/models/test_user_simple.py:12
+  /Users/Ben/engineering_projects/listener-app-modern/new-listener-app/backend/tests/models/test_user_simple.py:12: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/tests/services/test_auth_simple.py:14
+  /Users/Ben/engineering_projects/listener-app-modern/new-listener-app/backend/tests/services/test_auth_simple.py:14: MovedIn20Warning: The ``declarative_base()`` function is now available as sqlalchemy.orm.declarative_base(). (deprecated since: 2.0) (Background on SQLAlchemy 2.0 at: https://sqlalche.me/e/b8d9)
+    Base = declarative_base()
+
+backend/tests/services/test_favorites_service.py:79
+  /Users/Ben/engineering_projects/listener-app-modern/new-listener-app/backend/tests/services/test_favorites_service.py:79: PytestRemovedIn9Warning: Marks applied to fixtures have no effect
+  See docs: https://docs.pytest.org/en/stable/deprecations.html#applying-a-mark-to-a-fixture-function
+    async def test_user(async_db: AsyncSession) -> User:
+
+backend/tests/services/test_favorites_service.py:95
+  /Users/Ben/engineering_projects/listener-app-modern/new-listener-app/backend/tests/services/test_favorites_service.py:95: PytestRemovedIn9Warning: Marks applied to fixtures have no effect
+  See docs: https://docs.pytest.org/en/stable/deprecations.html#applying-a-mark-to-a-fixture-function
+    async def test_song(async_db: AsyncSession) -> Song:
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR backend/tests/api/v1/test_bands.py
+ERROR backend/tests/api/v1/test_comments.py
+ERROR backend/tests/api/v1/test_follows.py
+ERROR backend/tests/api/v1/test_song_endpoints.py
+ERROR backend/tests/crud/test_band_crud.py
+ERROR backend/tests/crud/test_blog_crud.py
+ERROR backend/tests/models/test_comment.py
+ERROR backend/tests/models/test_user_blog_relationship.py
+ERROR backend/tests/models/test_user_follow_relationship.py
+ERROR tests/api/v1/test_tag_endpoints.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 10 errors during collection !!!!!!!!!!!!!!!!!!!
+======================= 23 warnings, 10 errors in 1.62s ========================

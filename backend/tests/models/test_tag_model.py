@@ -3,11 +3,11 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from app.models import Tag, Song, Band, Blog
-from app.utils import random_string
+from tests.utils.user import random_lower_string
 
 def test_create_tag(db_session: Session):
     """Test creating a new tag."""
-    tag_name = f"Test Tag {random_string()}"
+    tag_name = f"Test Tag {random_lower_string()}"
     tag = Tag(name=tag_name, description="A test tag description")
     db_session.add(tag)
     db_session.commit()
@@ -20,7 +20,7 @@ def test_create_tag(db_session: Session):
 
 def test_create_tag_no_description(db_session: Session):
     """Test creating a tag without a description."""
-    tag_name = f"Test Tag {random_string()}"
+    tag_name = f"Test Tag {random_lower_string()}"
     tag = Tag(name=tag_name)
     db_session.add(tag)
     db_session.commit()
@@ -31,7 +31,7 @@ def test_create_tag_no_description(db_session: Session):
 
 def test_create_duplicate_tag(db_session: Session):
     """Test that creating a tag with a duplicate name raises an error."""
-    tag_name = f"Test Tag {random_string()}"
+    tag_name = f"Test Tag {random_lower_string()}"
     
     # Create first tag
     tag1 = Tag(name=tag_name)
@@ -48,12 +48,12 @@ def test_create_duplicate_tag(db_session: Session):
 def test_tag_song_relationship(db_session: Session):
     """Test the relationship between tags and songs."""
     # Create a tag
-    tag = Tag(name=f"Test Tag {random_string()}")
+    tag = Tag(name=f"Test Tag {random_lower_string()}")
     db_session.add(tag)
     
     # Create a song
     song = Song(
-        title=f"Test Song {random_string()}",
+        title=f"Test Song {random_lower_string()}",
         duration=180,
         file_path="/path/to/song.mp3"
     )
@@ -70,11 +70,11 @@ def test_tag_song_relationship(db_session: Session):
 def test_tag_band_relationship(db_session: Session):
     """Test the relationship between tags and bands."""
     # Create a tag
-    tag = Tag(name=f"Test Tag {random_string()}")
+    tag = Tag(name=f"Test Tag {random_lower_string()}")
     db_session.add(tag)
     
     # Create a band
-    band = Band(name=f"Test Band {random_string()}")
+    band = Band(name=f"Test Band {random_lower_string()}")
     db_session.add(band)
     
     # Associate tag with band
@@ -88,12 +88,12 @@ def test_tag_band_relationship(db_session: Session):
 def test_tag_blog_relationship(db_session: Session):
     """Test the relationship between tags and blogs."""
     # Create a tag
-    tag = Tag(name=f"Test Tag {random_string()}")
+    tag = Tag(name=f"Test Tag {random_lower_string()}")
     db_session.add(tag)
     
     # Create a blog
     blog = Blog(
-        name=f"Test Blog {random_string()}",
+        name=f"Test Blog {random_lower_string()}",
         url="https://example.com/blog"
     )
     db_session.add(blog)
@@ -109,18 +109,18 @@ def test_tag_blog_relationship(db_session: Session):
 def test_tag_multiple_relationships(db_session: Session):
     """Test that a tag can be associated with multiple entities."""
     # Create a tag
-    tag = Tag(name=f"Test Tag {random_string()}")
+    tag = Tag(name=f"Test Tag {random_lower_string()}")
     db_session.add(tag)
     
     # Create entities
     song = Song(
-        title=f"Test Song {random_string()}",
+        title=f"Test Song {random_lower_string()}",
         duration=180,
         file_path="/path/to/song.mp3"
     )
-    band = Band(name=f"Test Band {random_string()}")
+    band = Band(name=f"Test Band {random_lower_string()}")
     blog = Blog(
-        name=f"Test Blog {random_string()}",
+        name=f"Test Blog {random_lower_string()}",
         url="https://example.com/blog"
     )
     

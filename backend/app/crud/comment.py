@@ -15,7 +15,7 @@ class CRUDComment(CRUDBase[Comment, CommentCreate, CommentUpdate]):
         self, db_session: AsyncSession, *, obj_in: CommentCreate, user_id: int
     ) -> Comment:
         """Create a new comment with user ID."""
-        comment_data = obj_in.dict()
+        comment_data = obj_in.model_dump()
         
         # Determine target type
         target_type = None
@@ -46,7 +46,7 @@ class CRUDComment(CRUDBase[Comment, CommentCreate, CommentUpdate]):
         self, db_session: Session, *, obj_in: CommentCreate, user_id: int
     ) -> Comment:
         """Create a new comment with user ID (synchronous version)."""
-        comment_data = obj_in.dict()
+        comment_data = obj_in.model_dump()
         
         # Determine target type
         target_type = None

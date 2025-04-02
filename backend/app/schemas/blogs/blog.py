@@ -37,7 +37,7 @@ class BlogInDBBase(BlogBase):
     last_scraped_at: Optional[str] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class Blog(BlogInDBBase):

@@ -27,7 +27,8 @@ class TagInDBBase(TagBase):
     updated_at: datetime
     
     class Config:
-        orm_mode = True
+        # orm_mode = True
+        from_attributes = True # Pydantic V2
 
 
 class Tag(TagInDBBase):

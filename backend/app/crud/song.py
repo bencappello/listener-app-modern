@@ -395,7 +395,7 @@ class CRUDSong(CRUDBase[Song, SongCreate, SongUpdate]):
         if isinstance(obj_in, dict):
             update_data = obj_in
         else:
-            update_data = obj_in.dict(exclude_unset=True)
+            update_data = obj_in.model_dump(exclude_unset=True)
         
         # Handle tags separately if present in update_data
         if "tags" in update_data:

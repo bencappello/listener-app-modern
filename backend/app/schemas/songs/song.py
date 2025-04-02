@@ -32,14 +32,16 @@ class SongUpdate(BaseModel):
 
 
 class SongInDBBase(SongBase):
-    """Base schema for retrieving song from database."""
+    """Base schema for Song model with DB fields."""
     id: int
-    file_path: str
+    band_id: Optional[int] = None
+    blog_id: Optional[int] = None
     created_at: datetime
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        # orm_mode = True
+        from_attributes = True # Pydantic V2
 
 
 class Song(SongInDBBase):

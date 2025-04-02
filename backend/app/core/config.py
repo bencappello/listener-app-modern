@@ -2,8 +2,8 @@ import os
 import secrets
 from typing import Any, Dict, List, Optional, Union
 
-from pydantic import validator
-from pydantic_settings import BaseSettings
+from pydantic import validator, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -14,21 +14,18 @@ class Settings(BaseSettings):
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000
     API_V1_STR: str = "/api/v1"  # Added API version prefix
-    SECRET_KEY: str = "development_secret_key"
     DEBUG: bool = True
     
-    # CORS - simplified to avoid validation errors
-    API_CORS_ORIGINS_STR: Optional[str] = None
-    
-    @property
-    def API_CORS_ORIGINS(self) -> List[str]:
-        """Get a list of allowed CORS origins."""
-        if self.API_CORS_ORIGINS_STR:
-            return [i.strip() for i in self.API_CORS_ORIGINS_STR.split(",")]
-        return ["http://localhost:3000", "http://localhost:8080"]
+    # CORS
+    API_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8080"] # Define field with default
     
     # Database
     DATABASE_URL: str = "postgresql://postgres:postgres@localhost:5432/listener_db"
+    DB_HOST: str = "postgres"
+    DB_PORT: str = "5432"
+    DB_NAME: str = "listener_db"
+    DB_USER: str = "postgres"
+    DB_PASSWORD: str = "postgres"
     
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -40,15 +37,23 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "jwt_development_secret"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours in minutes
+    JWT_SECRET: str = "your_jwt_secret_here"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRATION: int = 1440
     
-    @validator("ACCESS_TOKEN_EXPIRE_MINUTES", pre=True)
-    def parse_jwt_expiration(cls, v):
+    @field_validator("ACCESS_TOKEN_EXPIRE_MINUTES", "JWT_EXPIRATION", mode='before')
+    @classmethod
+    def parse_jwt_expiration(cls, v: Any) -> int:
         """Parse JWT expiration from string to int."""
         if isinstance(v, str):
-            # Remove any comments and convert to int
             v = v.split('#')[0].strip()
-            return int(v)
-        return v
+            try:
+                return int(v)
+            except ValueError:
+                raise ValueError("Invalid integer value for JWT expiration")
+        elif isinstance(v, int):
+             return v
+        raise TypeError("JWT expiration must be an int or string")
     
     # AWS
     AWS_ACCESS_KEY_ID: Optional[str] = None
@@ -58,10 +63,14 @@ class Settings(BaseSettings):
     
     # Frontend
     FRONTEND_URL: str = "http://localhost:3000"
+    REACT_APP_API_URL: str = "http://localhost:8000"
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    # Use model_config instead of Config class for Pydantic v2 settings
+    model_config = SettingsConfigDict(
+        env_file='.env',
+        case_sensitive=True,
+        extra='ignore' # Keep ignore
+    )
 
 
 # Create settings instance

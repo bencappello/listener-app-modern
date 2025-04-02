@@ -3,10 +3,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
 from app.models import Comment, User, Song, Band, Blog
-from app.tests.utils.user import create_random_user
-from app.tests.utils.song import create_random_song
-from app.tests.utils.band import create_random_band
-from app.tests.utils.blog import create_random_blog
+from tests.utils.user import create_random_user
+from tests.utils.song import create_random_song
+from tests.utils.band import create_random_band
+from tests.utils.blog import create_random_blog
 
 
 def test_create_comment_on_song(db_session: Session):
@@ -22,6 +22,8 @@ def test_create_comment_on_song(db_session: Session):
     )
     db_session.add(comment)
     db_session.commit()
+    db_session.refresh(user)
+    db_session.refresh(song)
     db_session.refresh(comment)
     
     assert comment.id is not None
@@ -33,8 +35,9 @@ def test_create_comment_on_song(db_session: Session):
     assert comment.target_type == "song"
     assert comment.user == user
     assert comment.song == song
-    assert user in song.comments_users # Assuming comments_users exists
-    assert song in user.commented_songs # Assuming commented_songs exists
+    assert comment in user.comments
+    assert comment in song.comments
+    assert user.id in [c.user_id for c in song.comments]
 
 def test_create_comment_on_band(db_session: Session):
     """Test creating a comment associated with a band."""

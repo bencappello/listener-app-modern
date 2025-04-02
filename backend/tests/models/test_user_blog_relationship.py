@@ -4,8 +4,8 @@ from sqlalchemy import select, func
 from datetime import datetime
 
 from app.models import User, Blog, UserBlog
-from app.tests.utils.user import create_random_user
-from app.tests.utils.blog import create_random_blog
+from tests.utils.user import create_random_user
+from tests.utils.blog import create_random_blog
 
 def test_create_user_blog_follow(db_session: Session):
     """Test creating a follow relationship between user and blog."""

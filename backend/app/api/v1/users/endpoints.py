@@ -56,7 +56,7 @@ async def get_current_user_info(
     Returns:
         User: Current user information
     """
-    return UserSchema.parse_obj(jsonable_encoder(current_user))
+    return UserSchema.model_validate(jsonable_encoder(current_user))
 
 
 @router.get("/me/async", response_model=UserSchema)
@@ -72,4 +72,4 @@ async def get_current_user_info_async(
     Returns:
         User: Current user information
     """
-    return UserSchema.parse_obj(jsonable_encoder(current_user))
+    return UserSchema.model_validate(jsonable_encoder(current_user))

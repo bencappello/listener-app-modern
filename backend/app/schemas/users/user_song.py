@@ -32,9 +32,17 @@ class UserSongInDBBase(UserSongBase):
         orm_mode = True
 
 
-class UserSong(UserSongInDBBase):
-    """Schema for retrieving a UserSong."""
-    pass
+class UserSong(UserSongBase):
+    # Represents the association object itself
+    user_id: int
+    song_id: int
+    last_played_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        # orm_mode = True
+        from_attributes = True # Pydantic V2
 
 
 class FavoriteCreate(BaseModel):

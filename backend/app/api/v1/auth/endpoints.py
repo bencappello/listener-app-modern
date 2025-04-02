@@ -1,5 +1,5 @@
 from datetime import timedelta
-from typing import Any
+from typing import Any, Dict
 
 from fastapi import APIRouter, Depends, HTTPException, status, Form, Security
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -165,7 +165,7 @@ async def login(
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "user": UserSchema.parse_obj(jsonable_encoder(user))
+        "user": UserSchema.model_validate(jsonable_encoder(user))
     }
 
 
@@ -208,7 +208,7 @@ async def login_async(
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "user": UserSchema.parse_obj(jsonable_encoder(user))
+        "user": UserSchema.model_validate(jsonable_encoder(user))
     }
 
 
@@ -229,7 +229,7 @@ async def logout(
     """
     # Invalidate the token by adding it to the blacklist
     blacklist_token(token)
-    return {"message": "Successfully logged out", "user": UserSchema.parse_obj(jsonable_encoder(current_user))}
+    return {"message": "Successfully logged out", "user": UserSchema.model_validate(jsonable_encoder(current_user))}
 
 
 @router.api_route("/logout/async", response_model=LogoutResponse, methods=["GET", "POST"])
@@ -249,4 +249,4 @@ async def logout_async(
     """
     # Invalidate the token by adding it to the blacklist
     blacklist_token(token)
-    return {"message": "Successfully logged out", "user": UserSchema.parse_obj(jsonable_encoder(current_user))} 
+    return {"message": "Successfully logged out", "user": UserSchema.model_validate(jsonable_encoder(current_user))} 

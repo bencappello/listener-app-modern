@@ -15,11 +15,16 @@ import pytest_asyncio
 from sqlalchemy import event
 from fastapi import HTTPException, status, FastAPI
 
+# Add backend directory to Python path *first*
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
 # Configure SQLAlchemy greenlet_spawn before importing or creating any engines
 # This is needed for SQLAlchemy to correctly handle async operations
 from sqlalchemy.util import greenlet_spawn as sa_greenlet_spawn
 
-# Import all models to ensure they're registered with Base
+# Now import models and other app components
 from app.models.user import User
 from app.models.band import Band
 from app.models.blog import Blog
@@ -39,6 +44,7 @@ from main import app
 from app.api.dependencies import get_async_db, get_current_active_user
 from app.core.config import settings
 from app.core.security import create_access_token, get_password_hash
+from app.db.session import get_db
 
 def run_in_greenlet(fn, *args, **kwargs):
     """Run a function in a greenlet"""
@@ -48,25 +54,6 @@ def run_in_greenlet(fn, *args, **kwargs):
 
 # Monkey patch SQLAlchemy's greenlet_spawn
 sa_greenlet_spawn.greenlet_spawn = run_in_greenlet
-
-# Add backend directory to Python path
-backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if backend_dir not in sys.path:
-    sys.path.insert(0, backend_dir)
-
-try:
-    from app.core.config import settings
-    from app.db.base import Base
-    from app.db.session import get_db, get_async_db
-    from app.models.user import User
-    from app.services.auth import create_access_token
-    from app.api import dependencies as deps
-    from main import app
-    from tests.factories import UserFactory, SongFactory, BlogFactory
-except ImportError as e:
-    print(f"Import error: {e}")
-    print(f"Current sys.path: {sys.path}")
-    raise
 
 # Use SQLite in-memory for testing
 SQLALCHEMY_DATABASE_URL = "sqlite:///./test.db"
@@ -429,9 +416,9 @@ async def authenticated_user(
         )
     
     # Apply the overrides
-    app.dependency_overrides[deps.get_current_user] = override_get_current_user
-    app.dependency_overrides[deps.get_current_active_user] = override_get_current_user
-    app.dependency_overrides[deps.get_current_active_superuser] = override_get_current_active_superuser
+    app.dependency_overrides[get_current_user] = override_get_current_user
+    app.dependency_overrides[get_current_active_user] = override_get_current_user
+    app.dependency_overrides[get_current_active_superuser] = override_get_current_active_superuser
     
     # Add finalizer to clear overrides
     def fin():

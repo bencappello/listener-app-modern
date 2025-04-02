@@ -1,6 +1,6 @@
-from typing import Optional, List, Literal
+from typing import Optional, List, Literal, Any
 from datetime import datetime
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, model_validator
 
 
 class CommentBase(BaseModel):
@@ -14,25 +14,21 @@ class CommentBase(BaseModel):
 class CommentCreate(CommentBase):
     """Schema for creating a new Comment."""
     
-    @validator('song_id', 'band_id', 'blog_id')
-    def check_target_entity(cls, v, values, **kwargs):
-        """Ensure at least one target entity is specified."""
-        field = kwargs.get('field', None)
-        
-        # Skip validation if this field is None (not specified)
-        if v is None:
-            return v
-            
-        # Check for multiple entity IDs
-        all_entity_fields = ['song_id', 'band_id', 'blog_id']
-        all_entity_fields.remove(field.name)
-        
-        # Make sure other entity fields aren't specified
-        for other_field in all_entity_fields:
-            if other_field in values and values[other_field] is not None:
-                raise ValueError('A comment can only be associated with one entity: song, band, or blog')
-                
-        return v
+    # Use model_validator for cross-field validation
+    @model_validator(mode='before')
+    @classmethod
+    def check_single_target(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            targets_provided = sum(
+                1 
+                for field in ['song_id', 'band_id', 'blog_id'] 
+                if data.get(field) is not None
+            )
+            if targets_provided == 0:
+                raise ValueError('Comment must have one target: song_id, band_id, or blog_id')
+            if targets_provided > 1:
+                raise ValueError('Comment can only have one target: song_id, band_id, or blog_id')
+        return data
 
 
 class CommentUpdate(CommentBase):
@@ -52,7 +48,8 @@ class CommentInDBBase(CommentBase):
     updated_at: datetime
 
     class Config:
-        orm_mode = True
+        # orm_mode = True
+        from_attributes = True # Pydantic V2
 
 
 class Comment(CommentInDBBase):
