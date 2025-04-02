@@ -1,12 +1,15 @@
 import { configureStore } from '@reduxjs/toolkit';
 import exampleReducer from './slices/exampleSlice'; // Placeholder
 import { apiSlice } from '../features/api/apiSlice'; // Import the API slice
+import authReducer from '../features/auth/authSlice'; // Import the auth reducer
 
 // Configure the Redux store
 export const store = configureStore({
   reducer: {
     // Add the API slice reducer
     [apiSlice.reducerPath]: apiSlice.reducer,
+    // Add the auth slice reducer
+    auth: authReducer, 
     // Add other reducers here
     example: exampleReducer, // Placeholder, can be removed later
     // auth: authReducer,

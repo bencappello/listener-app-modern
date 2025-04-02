@@ -1,75 +1,52 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { AuthState, User } from '../../types/auth';
+import { RootState } from '../../store'; // Import RootState for selectors
+// We will import the extended apiSlice later for extraReducers
 
-// Initial authentication state
-const initialState: AuthState = {
-  user: null,
-  isAuthenticated: false,
-  isLoading: false,
-  error: null,
-};
-
-// Get user from localStorage if available
-try {
-  const user = localStorage.getItem('user');
-  const token = localStorage.getItem('token');
-  
-  if (user && token) {
-    initialState.user = JSON.parse(user);
-    initialState.isAuthenticated = true;
-  }
-} catch (error) {
-  // Handle error or ignore
-  console.error('Error loading auth state from localStorage:', error);
+// Define the shape of the auth state
+export interface AuthState {
+  user: { id: string; email: string; name?: string } | null; // Or a more detailed user object
+  token: string | null;
+  isAuthenticated: boolean;
 }
 
-// Create the auth slice
+// Define the initial state
+const initialState: AuthState = {
+  user: null,
+  token: null, 
+  isAuthenticated: false,
+};
+
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    loginStart: (state) => {
-      state.isLoading = true;
-      state.error = null;
-    },
-    loginSuccess: (state, action: PayloadAction<User>) => {
-      state.isLoading = false;
+    // Reducer to handle setting user credentials after login/registration
+    setCredentials: (
+      state,
+      action: PayloadAction<{ user: AuthState['user']; token: string }>
+    ) => {
+      state.user = action.payload.user;
+      state.token = action.payload.token;
       state.isAuthenticated = true;
-      state.user = action.payload;
-      state.error = null;
     },
-    loginFailure: (state, action: PayloadAction<string>) => {
-      state.isLoading = false;
-      state.isAuthenticated = false;
+    // Reducer to handle logout
+    logOut: (state) => {
       state.user = null;
-      state.error = action.payload;
-    },
-    logout: (state) => {
+      state.token = null;
       state.isAuthenticated = false;
-      state.user = null;
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
     },
-    updateUser: (state, action: PayloadAction<Partial<User>>) => {
-      if (state.user) {
-        state.user = { ...state.user, ...action.payload };
-        localStorage.setItem('user', JSON.stringify(state.user));
-      }
-    },
-    clearError: (state) => {
-      state.error = null;
-    },
+  },
+  // extraReducers will be added here later to handle API lifecycle actions
+  extraReducers: (builder) => {
+    // builder.addMatcher(...)
   },
 });
 
-// Export actions and reducer
-export const { 
-  loginStart, 
-  loginSuccess, 
-  loginFailure, 
-  logout, 
-  updateUser, 
-  clearError 
-} = authSlice.actions;
+export const { setCredentials, logOut } = authSlice.actions;
 
-export default authSlice.reducer; 
+export default authSlice.reducer;
+
+// Selectors for accessing auth state
+export const selectCurrentUser = (state: RootState) => state.auth.user;
+export const selectIsAuthenticated = (state: RootState) => state.auth.isAuthenticated;
+export const selectCurrentToken = (state: RootState) => state.auth.token; 
